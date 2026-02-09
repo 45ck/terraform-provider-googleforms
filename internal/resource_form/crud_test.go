@@ -1223,3 +1223,244 @@ func TestUpdate_APIError_ReturnsDiagnostic(t *testing.T) {
 		t.Fatal("expected diagnostic with summary containing 'Error Reading Google Form Before Update'")
 	}
 }
+
+// ---------------------------------------------------------------------------
+// F-005: Additional CRUD error path tests
+// ---------------------------------------------------------------------------
+
+func TestCreate_ContentJSON_ParseError(t *testing.T) {
+	t.Parallel()
+
+	mockForms := &testutil.MockFormsAPI{
+		CreateFunc: func(_ context.Context, form *forms.Form) (*forms.Form, error) {
+			return &forms.Form{
+				FormId: "json-err-form-001",
+				Info:   form.Info,
+			}, nil
+		},
+	}
+	mockDrive := &testutil.MockDriveAPI{}
+
+	r := testResource(mockForms, mockDrive)
+	ctx := context.Background()
+
+	plan := buildPlan(t, map[string]tftypes.Value{
+		"title":               tftypes.NewValue(tftypes.String, "Bad JSON Form"),
+		"content_json":        tftypes.NewValue(tftypes.String, "invalid json {{"),
+		"published":           tftypes.NewValue(tftypes.Bool, false),
+		"accepting_responses": tftypes.NewValue(tftypes.Bool, false),
+		"quiz":                tftypes.NewValue(tftypes.Bool, false),
+	})
+
+	resp := &resource.CreateResponse{
+		State: emptyState(t),
+	}
+
+	r.Create(ctx, resource.CreateRequest{Plan: plan}, resp)
+
+	if !resp.Diagnostics.HasError() {
+		t.Fatal("expected error diagnostic when content_json is invalid")
+	}
+
+	found := false
+	for _, d := range resp.Diagnostics.Errors() {
+		if strings.Contains(d.Summary(), "Error Parsing content_json") {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Fatal("expected diagnostic with summary containing 'Error Parsing content_json'")
+	}
+}
+
+func TestUpdate_BatchUpdateError_ReturnsDiagnostic(t *testing.T) {
+	t.Parallel()
+
+	mockForms := &testutil.MockFormsAPI{
+		GetFunc: func(_ context.Context, formID string) (*forms.Form, error) {
+			return basicFormResponse(formID, "Update Batch Err"), nil
+		},
+		BatchUpdateFunc: func(_ context.Context, _ string, _ *forms.BatchUpdateFormRequest) (*forms.BatchUpdateFormResponse, error) {
+			return nil, &client.APIError{
+				StatusCode: 500,
+				Message:    "batch update server error",
+			}
+		},
+	}
+	mockDrive := &testutil.MockDriveAPI{}
+
+	r := testResource(mockForms, mockDrive)
+	ctx := context.Background()
+
+	state := buildState(t, map[string]tftypes.Value{
+		"id":                  tftypes.NewValue(tftypes.String, "batch-err-id"),
+		"title":               tftypes.NewValue(tftypes.String, "Update Batch Err"),
+		"published":           tftypes.NewValue(tftypes.Bool, false),
+		"accepting_responses": tftypes.NewValue(tftypes.Bool, false),
+		"quiz":                tftypes.NewValue(tftypes.Bool, false),
+	})
+
+	plan := buildPlan(t, map[string]tftypes.Value{
+		"id":                  tftypes.NewValue(tftypes.String, "batch-err-id"),
+		"title":               tftypes.NewValue(tftypes.String, "Updated Batch Err"),
+		"published":           tftypes.NewValue(tftypes.Bool, false),
+		"accepting_responses": tftypes.NewValue(tftypes.Bool, false),
+		"quiz":                tftypes.NewValue(tftypes.Bool, false),
+	})
+
+	resp := &resource.UpdateResponse{
+		State: state,
+	}
+
+	r.Update(ctx, resource.UpdateRequest{Plan: plan, State: state}, resp)
+
+	if !resp.Diagnostics.HasError() {
+		t.Fatal("expected error diagnostic when BatchUpdate fails during Update")
+	}
+
+	found := false
+	for _, d := range resp.Diagnostics.Errors() {
+		if strings.Contains(d.Summary(), "Error Updating Google Form") {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Fatal("expected diagnostic with summary containing 'Error Updating Google Form'")
+	}
+}
+
+func TestUpdate_WithContentJSON_Success(t *testing.T) {
+	t.Parallel()
+
+	var batchCalled bool
+	contentJSON := `[{"title":"Q1","questionItem":{"question":{"textQuestion":{"paragraph":false}}}}]`
+
+	getCalls := 0
+	mockForms := &testutil.MockFormsAPI{
+		GetFunc: func(_ context.Context, formID string) (*forms.Form, error) {
+			getCalls++
+			if getCalls == 1 {
+				// Pre-update: form has 1 existing item.
+				return &forms.Form{
+					FormId:       formID,
+					Info:         &forms.Info{Title: "JSON Update Form", DocumentTitle: "JSON Update Form"},
+					ResponderUri: "https://docs.google.com/forms/d/" + formID + "/viewform",
+					Items: []*forms.Item{
+						{
+							ItemId: "old_gid",
+							Title:  "Old Q?",
+							QuestionItem: &forms.QuestionItem{
+								Question: &forms.Question{
+									TextQuestion: &forms.TextQuestion{Paragraph: false},
+								},
+							},
+						},
+					},
+				}, nil
+			}
+			// Post-update: return updated form.
+			return basicFormResponse(formID, "JSON Update Form"), nil
+		},
+		BatchUpdateFunc: func(_ context.Context, _ string, _ *forms.BatchUpdateFormRequest) (*forms.BatchUpdateFormResponse, error) {
+			batchCalled = true
+			return &forms.BatchUpdateFormResponse{}, nil
+		},
+	}
+	mockDrive := &testutil.MockDriveAPI{}
+
+	r := testResource(mockForms, mockDrive)
+	ctx := context.Background()
+
+	state := buildState(t, map[string]tftypes.Value{
+		"id":                  tftypes.NewValue(tftypes.String, "json-update-id"),
+		"title":               tftypes.NewValue(tftypes.String, "JSON Update Form"),
+		"published":           tftypes.NewValue(tftypes.Bool, false),
+		"accepting_responses": tftypes.NewValue(tftypes.Bool, false),
+		"quiz":                tftypes.NewValue(tftypes.Bool, false),
+	})
+
+	plan := buildPlan(t, map[string]tftypes.Value{
+		"id":                  tftypes.NewValue(tftypes.String, "json-update-id"),
+		"title":               tftypes.NewValue(tftypes.String, "JSON Update Form"),
+		"content_json":        tftypes.NewValue(tftypes.String, contentJSON),
+		"published":           tftypes.NewValue(tftypes.Bool, false),
+		"accepting_responses": tftypes.NewValue(tftypes.Bool, false),
+		"quiz":                tftypes.NewValue(tftypes.Bool, false),
+	})
+
+	resp := &resource.UpdateResponse{
+		State: state,
+	}
+
+	r.Update(ctx, resource.UpdateRequest{Plan: plan, State: state}, resp)
+
+	if resp.Diagnostics.HasError() {
+		for _, d := range resp.Diagnostics.Errors() {
+			t.Logf("  diagnostic: %s -- %s", d.Summary(), d.Detail())
+		}
+		t.Fatal("expected no errors during Update with content_json")
+	}
+
+	if !batchCalled {
+		t.Fatal("expected BatchUpdate to be called for content_json update")
+	}
+}
+
+func TestCreate_PublishSettingsError_ReturnsDiagnostic(t *testing.T) {
+	t.Parallel()
+
+	mockForms := &testutil.MockFormsAPI{
+		CreateFunc: func(_ context.Context, form *forms.Form) (*forms.Form, error) {
+			return &forms.Form{
+				FormId: "pub-err-form-001",
+				Info:   form.Info,
+			}, nil
+		},
+		BatchUpdateFunc: func(_ context.Context, _ string, _ *forms.BatchUpdateFormRequest) (*forms.BatchUpdateFormResponse, error) {
+			return &forms.BatchUpdateFormResponse{}, nil
+		},
+		GetFunc: func(_ context.Context, formID string) (*forms.Form, error) {
+			return basicFormResponse(formID, "Pub Err Form"), nil
+		},
+		SetPublishSettingsFunc: func(_ context.Context, _ string, _ bool, _ bool) error {
+			return &client.APIError{
+				StatusCode: 500,
+				Message:    "publish settings failed",
+			}
+		},
+	}
+	mockDrive := &testutil.MockDriveAPI{}
+
+	r := testResource(mockForms, mockDrive)
+	ctx := context.Background()
+
+	plan := buildPlan(t, map[string]tftypes.Value{
+		"title":               tftypes.NewValue(tftypes.String, "Pub Err Form"),
+		"published":           tftypes.NewValue(tftypes.Bool, true),
+		"accepting_responses": tftypes.NewValue(tftypes.Bool, false),
+		"quiz":                tftypes.NewValue(tftypes.Bool, false),
+	})
+
+	resp := &resource.CreateResponse{
+		State: emptyState(t),
+	}
+
+	r.Create(ctx, resource.CreateRequest{Plan: plan}, resp)
+
+	if !resp.Diagnostics.HasError() {
+		t.Fatal("expected error diagnostic when SetPublishSettings fails")
+	}
+
+	found := false
+	for _, d := range resp.Diagnostics.Errors() {
+		if strings.Contains(d.Summary(), "Error Setting Publish Settings") {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Fatal("expected diagnostic with summary containing 'Error Setting Publish Settings'")
+	}
+}

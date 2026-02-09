@@ -7,7 +7,6 @@ import (
 	"context"
 	"testing"
 
-	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
@@ -178,6 +177,3 @@ func TestContentJSONHashModifier_ImplementsInterface(t *testing.T) {
 	var _ planmodifier.String = ContentJSONHashModifier{}
 }
 
-// Suppress unused import warning — attr is used by the compile-time check above
-// through the planmodifier.String interface which requires attr types.
-var _ attr.Value = types.StringNull()

@@ -130,6 +130,38 @@ func TestGradingRequiresQuiz_NoGrading_Passes(t *testing.T) {
 	expectNoError(t, diags)
 }
 
+func TestGradingRequiresQuiz_MultipleChoice_Error(t *testing.T) {
+	grading := &map[string]tftypes.Value{
+		"points":             tftypes.NewValue(tftypes.Number, 5),
+		"correct_answer":     tftypes.NewValue(tftypes.String, "A"),
+		"feedback_correct":   tftypes.NewValue(tftypes.String, nil),
+		"feedback_incorrect": tftypes.NewValue(tftypes.String, nil),
+	}
+	cfg := buildConfig(t, map[string]tftypes.Value{
+		"title": tftypes.NewValue(tftypes.String, "T"),
+		"quiz":  tftypes.NewValue(tftypes.Bool, false),
+		"item":  itemListVal(mcItem("q1", "Pick?", []string{"A", "B"}, grading)),
+	})
+	diags := runValidators(t, cfg, GradingRequiresQuizValidator{})
+	expectErrorContains(t, diags, "Grading requires quiz mode")
+}
+
+func TestGradingRequiresQuiz_Paragraph_Error(t *testing.T) {
+	grading := &map[string]tftypes.Value{
+		"points":             tftypes.NewValue(tftypes.Number, 5),
+		"correct_answer":     tftypes.NewValue(tftypes.String, nil),
+		"feedback_correct":   tftypes.NewValue(tftypes.String, nil),
+		"feedback_incorrect": tftypes.NewValue(tftypes.String, nil),
+	}
+	cfg := buildConfig(t, map[string]tftypes.Value{
+		"title": tftypes.NewValue(tftypes.String, "T"),
+		"quiz":  tftypes.NewValue(tftypes.Bool, false),
+		"item":  itemListVal(paraItem("q1", "Essay?", grading)),
+	})
+	diags := runValidators(t, cfg, GradingRequiresQuizValidator{})
+	expectErrorContains(t, diags, "Grading requires quiz mode")
+}
+
 // ---------------------------------------------------------------------------
 // ConfigValidators wiring
 // ---------------------------------------------------------------------------

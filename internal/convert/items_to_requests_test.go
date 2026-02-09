@@ -4,6 +4,7 @@
 package convert
 
 import (
+	"strings"
 	"testing"
 
 	forms "google.golang.org/api/forms/v1"
@@ -400,6 +401,24 @@ func TestBuildQuizSettingsRequest_DisableQuiz(t *testing.T) {
 // ---------------------------------------------------------------------------
 // helpers — ensure types compile (verify forms import used)
 // ---------------------------------------------------------------------------
+
+func TestItemModelToCreateRequest_NoQuestionBlock(t *testing.T) {
+	item := ItemModel{
+		Title:          "Empty item",
+		MultipleChoice: nil,
+		ShortAnswer:    nil,
+		Paragraph:      nil,
+	}
+
+	_, err := ItemModelToCreateRequest(item, 0)
+	if err == nil {
+		t.Fatal("expected error when no question block is set")
+	}
+
+	if !strings.Contains(err.Error(), "no question block") {
+		t.Errorf("expected error to contain 'no question block', got: %v", err)
+	}
+}
 
 func TestFormsImportUsed(t *testing.T) {
 	// This test simply ensures the forms import is used in tests.

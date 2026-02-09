@@ -174,6 +174,22 @@ func saItem(key, questionText string, grading *map[string]tftypes.Value) tftypes
 	return newItemVal(iType, key, nil, &sa, nil)
 }
 
+func paraItem(key, questionText string, grading *map[string]tftypes.Value) tftypes.Value {
+	iType := itemBlockType()
+	gType := iType.AttributeTypes["paragraph"].(tftypes.Object).AttributeTypes["grading"]
+	gVal := tftypes.NewValue(gType, nil)
+	if grading != nil {
+		gVal = tftypes.NewValue(gType, *grading)
+	}
+
+	para := tftypes.NewValue(iType.AttributeTypes["paragraph"], map[string]tftypes.Value{
+		"question_text": tftypes.NewValue(tftypes.String, questionText),
+		"required":      tftypes.NewValue(tftypes.Bool, false),
+		"grading":       gVal,
+	})
+	return newItemVal(iType, key, nil, nil, &para)
+}
+
 func bareItem(key string) tftypes.Value {
 	iType := itemBlockType()
 	return newItemVal(iType, key, nil, nil, nil)
@@ -253,6 +269,18 @@ func TestMutuallyExclusiveValidator_NeitherSet_Passes(t *testing.T) {
 	})
 	diags := runValidators(t, cfg, MutuallyExclusiveValidator{})
 	expectNoError(t, diags)
+}
+
+func TestMutuallyExclusive_EmptyContentJSON_WithItems_Error(t *testing.T) {
+	// Empty string is not null/unknown, so the validator treats it as "set".
+	// Combined with items, this should trigger the mutually exclusive error.
+	cfg := buildConfig(t, map[string]tftypes.Value{
+		"title":        tftypes.NewValue(tftypes.String, "T"),
+		"content_json": tftypes.NewValue(tftypes.String, ""),
+		"item":         itemListVal(saItem("q1", "Question?", nil)),
+	})
+	diags := runValidators(t, cfg, MutuallyExclusiveValidator{})
+	expectErrorContains(t, diags, "Cannot use both")
 }
 
 // ---------------------------------------------------------------------------

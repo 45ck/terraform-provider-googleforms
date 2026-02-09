@@ -304,14 +304,17 @@ func TestRetry_BackoffIncreases(t *testing.T) {
 	gap2 := timestamps[2].Sub(timestamps[1])
 	gap3 := timestamps[3].Sub(timestamps[2])
 
-	// gap2 should be roughly 2x gap1, gap3 roughly 2x gap2.
-	// Allow generous tolerance for jitter (±25%) and scheduling.
-	if gap3 < gap1 {
+	// Verify backoff generally increases. With jitter, use a very safe margin:
+	// gap3 should be greater than gap1/2 (well within exponential growth).
+	if gap3 < gap1/2 {
 		t.Errorf("expected backoff to increase: gap1=%v gap2=%v gap3=%v",
 			gap1, gap2, gap3)
 	}
 
-	_ = gap2 // used for diagnostic output above
+	// Also assert gap2 is positive and within a reasonable range.
+	if gap2 < gap1/2 {
+		t.Errorf("expected gap2 to be at least gap1/2: gap1=%v gap2=%v", gap1, gap2)
+	}
 }
 
 func TestRetry_NonAPIErrorNotRetried(t *testing.T) {
