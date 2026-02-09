@@ -12,7 +12,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	forms "google.golang.org/api/forms/v1"
 
-	"github.com/your-org/terraform-provider-googleforms/internal/convert"
+	"github.com/45ck/terraform-provider-googleforms/internal/convert"
 )
 
 // Create creates a new Google Form with the configured items and settings.

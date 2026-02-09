@@ -1,6 +1,6 @@
 # Terraform Provider for Google Forms
 
-[![Tests](https://github.com/your-org/terraform-provider-googleforms/actions/workflows/test.yml/badge.svg)](https://github.com/your-org/terraform-provider-googleforms/actions/workflows/test.yml)
+[![Tests](https://github.com/45ck/terraform-provider-googleforms/actions/workflows/test.yml/badge.svg)](https://github.com/45ck/terraform-provider-googleforms/actions/workflows/test.yml)
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
 A Terraform provider for managing Google Forms as infrastructure. Create, update, and delete Google Forms with full lifecycle management using Terraform.
@@ -29,7 +29,7 @@ A Terraform provider for managing Google Forms as infrastructure. Create, update
 terraform {
   required_providers {
     googleforms = {
-      source  = "your-org/googleforms"
+      source  = "45ck/googleforms"
       version = "~> 0.1"
     }
   }

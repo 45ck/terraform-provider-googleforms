@@ -100,8 +100,11 @@ func (c *FormsAPIClient) SetPublishSettings(
 	err := WithRetry(ctx, c.retry, func() error {
 		pubReq := &forms.SetPublishSettingsRequest{
 			PublishSettings: &forms.PublishSettings{
-				IsPublished:          isPublished,
-				IsAcceptingResponses: isAccepting,
+				PublishState: &forms.PublishState{
+					IsPublished:          isPublished,
+					IsAcceptingResponses: isAccepting,
+					ForceSendFields:      []string{"IsPublished", "IsAcceptingResponses"},
+				},
 			},
 		}
 		_, apiErr := c.service.Forms.SetPublishSettings(formID, pubReq).Context(ctx).Do()

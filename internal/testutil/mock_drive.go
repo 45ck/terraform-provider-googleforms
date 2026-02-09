@@ -6,7 +6,7 @@ package testutil
 import (
 	"context"
 
-	"github.com/your-org/terraform-provider-googleforms/internal/client"
+	"github.com/45ck/terraform-provider-googleforms/internal/client"
 )
 
 // MockDriveAPI is a configurable mock implementation of client.DriveAPI.

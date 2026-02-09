@@ -8,7 +8,7 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 
-	"github.com/your-org/terraform-provider-googleforms/internal/convert"
+	"github.com/45ck/terraform-provider-googleforms/internal/convert"
 )
 
 // Compile-time interface check.

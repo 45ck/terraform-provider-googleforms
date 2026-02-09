@@ -10,7 +10,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 
-	"github.com/your-org/terraform-provider-googleforms/internal/client"
+	"github.com/45ck/terraform-provider-googleforms/internal/client"
 )
 
 // Delete removes a Google Form by trashing it via the Drive API.

@@ -14,8 +14,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-go/tftypes"
 	forms "google.golang.org/api/forms/v1"
 
-	"github.com/your-org/terraform-provider-googleforms/internal/client"
-	"github.com/your-org/terraform-provider-googleforms/internal/testutil"
+	"github.com/45ck/terraform-provider-googleforms/internal/client"
+	"github.com/45ck/terraform-provider-googleforms/internal/testutil"
 )
 
 // ---------------------------------------------------------------------------

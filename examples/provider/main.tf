@@ -1,7 +1,7 @@
 terraform {
   required_providers {
     googleforms = {
-      source  = "your-org/googleforms"
+      source  = "45ck/googleforms"
       version = "~> 0.1"
     }
   }

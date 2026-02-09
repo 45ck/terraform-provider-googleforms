@@ -11,11 +11,13 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-framework/provider"
 	"github.com/hashicorp/terraform-plugin-framework/providerserver"
+	fwresource "github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
+	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
 	"github.com/hashicorp/terraform-plugin-go/tftypes"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 
-	providerImpl "github.com/your-org/terraform-provider-googleforms/internal/provider"
+	providerImpl "github.com/45ck/terraform-provider-googleforms/internal/provider"
 )
 
 // testFakeCredentials returns a minimal valid service account JSON for testing.
@@ -283,8 +285,8 @@ func TestProviderResources_RegistersFormResource(t *testing.T) {
 
 	// Instantiate the first resource and check its type name.
 	r := resourceResp[0]()
-	metaResp := &resource.MetadataResponse{}
-	r.Metadata(context.Background(), resource.MetadataRequest{
+	metaResp := &fwresource.MetadataResponse{}
+	r.Metadata(context.Background(), fwresource.MetadataRequest{
 		ProviderTypeName: "google_forms",
 	}, metaResp)
 
@@ -313,7 +315,7 @@ func TestProviderAcceptance_ConfigIsValid(t *testing.T) {
 	// This test only validates that the provider config schema is valid.
 	// It does not make real API calls.
 	resource.UnitTest(t, resource.TestCase{
-		ProtoV6ProviderFactories: map[string]func() (providerserver.ProviderServer, error){
+		ProtoV6ProviderFactories: map[string]func() (tfprotov6.ProviderServer, error){
 			"google_forms": providerserver.NewProtocol6WithError(providerImpl.New("test")()),
 		},
 		Steps: []resource.TestStep{

@@ -10,7 +10,7 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-framework/providerserver"
 
-	"github.com/your-org/terraform-provider-googleforms/internal/provider"
+	"github.com/45ck/terraform-provider-googleforms/internal/provider"
 )
 
 var version = "dev"
@@ -27,7 +27,7 @@ func main() {
 	flag.Parse()
 
 	opts := providerserver.ServeOpts{
-		Address: "registry.terraform.io/your-org/googleforms",
+		Address: "registry.terraform.io/45ck/googleforms",
 		Debug:   debug,
 	}
 

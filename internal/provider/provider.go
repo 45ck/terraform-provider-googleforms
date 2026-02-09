@@ -16,8 +16,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 
-	"github.com/your-org/terraform-provider-googleforms/internal/client"
-	resourceform "github.com/your-org/terraform-provider-googleforms/internal/resource_form"
+	"github.com/45ck/terraform-provider-googleforms/internal/client"
+	resourceform "github.com/45ck/terraform-provider-googleforms/internal/resource_form"
 )
 
 var _ provider.Provider = &GoogleFormsProvider{}

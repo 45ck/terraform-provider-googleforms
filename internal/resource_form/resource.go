@@ -8,7 +8,7 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 
-	"github.com/your-org/terraform-provider-googleforms/internal/client"
+	"github.com/45ck/terraform-provider-googleforms/internal/client"
 )
 
 // Compile-time interface checks.

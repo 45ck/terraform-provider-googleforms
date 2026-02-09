@@ -10,8 +10,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 
-	"github.com/your-org/terraform-provider-googleforms/internal/client"
-	"github.com/your-org/terraform-provider-googleforms/internal/convert"
+	"github.com/45ck/terraform-provider-googleforms/internal/client"
+	"github.com/45ck/terraform-provider-googleforms/internal/convert"
 )
 
 // Read fetches the current state of a Google Form from the API.

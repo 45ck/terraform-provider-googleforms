@@ -16,7 +16,7 @@ and instructions for contributing to this project.
 ### Getting Started
 
 ```bash
-git clone https://github.com/your-org/terraform-provider-googleforms.git
+git clone https://github.com/45ck/terraform-provider-googleforms.git
 cd terraform-provider-googleforms
 go mod download
 pre-commit install
