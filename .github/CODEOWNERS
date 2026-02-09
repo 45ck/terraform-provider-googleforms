@@ -1,0 +1,9 @@
+# Default owners for everything
+* @your-org/maintainers
+
+# Critical paths require explicit review
+internal/ @your-org/maintainers
+*.go @your-org/maintainers
+.golangci.yml @your-org/maintainers
+.goreleaser.yml @your-org/maintainers
+.github/workflows/ @your-org/maintainers

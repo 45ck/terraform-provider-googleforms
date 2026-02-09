@@ -1,0 +1,31 @@
+name: Acceptance Tests
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  TF_ACC: "1"
+  GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
+
+jobs:
+  acceptance:
+    name: Acceptance Tests
+    runs-on: ubuntu-latest
+    if: github.repository_owner == 'your-org'
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+      - name: Run acceptance tests
+        run: go test ./internal/... -v -timeout 25m -count=1 -parallel=1
+      - name: Run sweeper
+        if: always()
+        run: go test ./internal/testutil/... -v -sweep=all -timeout 5m

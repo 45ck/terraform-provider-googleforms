@@ -1,0 +1,49 @@
+# Binaries
+terraform-provider-googleforms
+terraform-provider-googleforms.exe
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Test binary
+*.test
+
+# Output of go coverage
+*.out
+coverage.html
+coverprofile.txt
+
+# Dependency directories
+vendor/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+crash.log
+
+# Credentials (NEVER commit these)
+*.json.key
+service-account*.json
+credentials*.json
+client_secret*.json
+
+# Build artifacts
+dist/
+
+# Environment
+.env
+.env.*
