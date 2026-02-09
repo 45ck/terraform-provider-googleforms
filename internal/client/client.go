@@ -12,12 +12,14 @@ import (
 	drive "google.golang.org/api/drive/v3"
 	forms "google.golang.org/api/forms/v1"
 	"google.golang.org/api/option"
+	sheets "google.golang.org/api/sheets/v4"
 )
 
 // requiredScopes lists the OAuth2 scopes needed for the provider.
 var requiredScopes = []string{
 	forms.FormsBodyScope,
 	drive.DriveFileScope,
+	sheets.SpreadsheetsScope,
 }
 
 // NewClient creates a new Client with real Google API implementations.
@@ -43,11 +45,17 @@ func NewClient(
 		return nil, fmt.Errorf("creating drive service: %w", err)
 	}
 
+	sheetsService, err := createSheetsService(ctx, tokenSource)
+	if err != nil {
+		return nil, fmt.Errorf("creating sheets service: %w", err)
+	}
+
 	retryCfg := DefaultRetryConfig()
 
 	return &Client{
-		Forms: NewFormsAPIClient(formsService, retryCfg),
-		Drive: NewDriveAPIClient(driveService, retryCfg),
+		Forms:  NewFormsAPIClient(formsService, retryCfg),
+		Drive:  NewDriveAPIClient(driveService, retryCfg),
+		Sheets: NewSheetsAPIClient(sheetsService, retryCfg),
 	}, nil
 }
 
@@ -115,6 +123,19 @@ func createDriveService(
 	svc, err := drive.NewService(ctx, option.WithTokenSource(ts))
 	if err != nil {
 		return nil, fmt.Errorf("initializing drive service: %w", err)
+	}
+
+	return svc, nil
+}
+
+// createSheetsService creates a Google Sheets API service.
+func createSheetsService(
+	ctx context.Context,
+	ts oauth2.TokenSource,
+) (*sheets.Service, error) {
+	svc, err := sheets.NewService(ctx, option.WithTokenSource(ts))
+	if err != nil {
+		return nil, fmt.Errorf("initializing sheets service: %w", err)
 	}
 
 	return svc, nil

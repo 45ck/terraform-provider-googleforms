@@ -9,6 +9,7 @@ import (
 	"context"
 
 	forms "google.golang.org/api/forms/v1"
+	sheets "google.golang.org/api/sheets/v4"
 )
 
 // FormsAPI defines the interface for Google Forms API operations.
@@ -34,8 +35,21 @@ type DriveAPI interface {
 	Delete(ctx context.Context, fileID string) error
 }
 
+// SheetsAPI defines the interface for Google Sheets API operations.
+type SheetsAPI interface {
+	// Create creates a new spreadsheet.
+	Create(ctx context.Context, s *sheets.Spreadsheet) (*sheets.Spreadsheet, error)
+
+	// Get retrieves a spreadsheet by ID.
+	Get(ctx context.Context, spreadsheetID string) (*sheets.Spreadsheet, error)
+
+	// BatchUpdate applies a batch of update requests to a spreadsheet.
+	BatchUpdate(ctx context.Context, spreadsheetID string, req *sheets.BatchUpdateSpreadsheetRequest) (*sheets.BatchUpdateSpreadsheetResponse, error)
+}
+
 // Client holds the API clients used by the provider.
 type Client struct {
-	Forms FormsAPI
-	Drive DriveAPI
+	Forms  FormsAPI
+	Drive  DriveAPI
+	Sheets SheetsAPI
 }
