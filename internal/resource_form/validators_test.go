@@ -5,6 +5,7 @@ package resourceform
 
 import (
 	"context"
+	"strings"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -86,20 +87,11 @@ func expectErrorContains(t *testing.T, diags diag.Diagnostics, sub string) {
 	t.Helper()
 	expectError(t, diags)
 	for _, d := range diags.Errors() {
-		if strContains(d.Detail(), sub) || strContains(d.Summary(), sub) {
+		if strings.Contains(d.Detail(), sub) || strings.Contains(d.Summary(), sub) {
 			return
 		}
 	}
 	t.Fatalf("no error diagnostic contains %q", sub)
-}
-
-func strContains(s, sub string) bool {
-	for i := 0; i <= len(s)-len(sub); i++ {
-		if s[i:i+len(sub)] == sub {
-			return true
-		}
-	}
-	return false
 }
 
 // ---------------------------------------------------------------------------

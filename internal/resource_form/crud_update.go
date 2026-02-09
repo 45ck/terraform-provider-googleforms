@@ -172,6 +172,9 @@ func (r *FormResource) Update(
 
 	// Step 7: Build key map for item correlation.
 	// For replace-all, items are new so correlate by position using plan items.
+	// ASSUMPTION: The Google Forms API returns items in the same order
+	// they were created via batchUpdate. If the API ever reorders items,
+	// this positional mapping will produce incorrect item_key assignments.
 	var keyMap map[string]string
 	if !plan.Items.IsNull() && !plan.Items.IsUnknown() {
 		var planItems []ItemModel

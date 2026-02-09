@@ -6,6 +6,7 @@ package resourceform
 import (
 	"context"
 	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -345,7 +346,7 @@ func TestCreate_APIError_ReturnsDiagnostic(t *testing.T) {
 
 	found := false
 	for _, d := range resp.Diagnostics.Errors() {
-		if strContains(d.Summary(), "Error Creating Google Form") {
+		if strings.Contains(d.Summary(), "Error Creating Google Form") {
 			found = true
 			break
 		}
@@ -523,7 +524,7 @@ func TestRead_APIError_ReturnsDiagnostic(t *testing.T) {
 
 	found := false
 	for _, d := range resp.Diagnostics.Errors() {
-		if strContains(d.Summary(), "Error Reading Google Form") {
+		if strings.Contains(d.Summary(), "Error Reading Google Form") {
 			found = true
 			break
 		}
@@ -830,7 +831,7 @@ func TestDelete_APIError_ReturnsDiagnostic(t *testing.T) {
 
 	found := false
 	for _, d := range resp.Diagnostics.Errors() {
-		if strContains(d.Summary(), "Error Deleting Google Form") {
+		if strings.Contains(d.Summary(), "Error Deleting Google Form") {
 			found = true
 			break
 		}
@@ -1213,7 +1214,7 @@ func TestUpdate_APIError_ReturnsDiagnostic(t *testing.T) {
 
 	found := false
 	for _, d := range resp.Diagnostics.Errors() {
-		if strContains(d.Summary(), "Error Reading Google Form Before Update") {
+		if strings.Contains(d.Summary(), "Error Reading Google Form Before Update") {
 			found = true
 			break
 		}

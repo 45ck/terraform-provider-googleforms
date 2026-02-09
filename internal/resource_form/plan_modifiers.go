@@ -5,11 +5,10 @@ package resourceform
 
 import (
 	"context"
-	"crypto/sha256"
-	"encoding/json"
-	"fmt"
 
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+
+	"github.com/your-org/terraform-provider-googleforms/internal/convert"
 )
 
 // Compile-time interface check.
@@ -44,31 +43,16 @@ func (m ContentJSONHashModifier) PlanModifyString(
 		return
 	}
 
-	configHash := normalizeJSONHash(req.ConfigValue.ValueString())
-	stateHash := normalizeJSONHash(req.StateValue.ValueString())
+	configHash, configErr := convert.HashJSON(req.ConfigValue.ValueString())
+	stateHash, stateErr := convert.HashJSON(req.StateValue.ValueString())
+
+	if configErr != nil || stateErr != nil {
+		// If either value is not valid JSON, fall through to default
+		// plan behavior (show a diff).
+		return
+	}
 
 	if configHash == stateHash {
 		resp.PlanValue = req.StateValue
 	}
-}
-
-// normalizeJSONHash returns a hex-encoded SHA-256 hash of the compact JSON
-// representation of the input string. If the input is not valid JSON, the
-// raw string is hashed instead.
-func normalizeJSONHash(raw string) string {
-	var parsed interface{}
-	if err := json.Unmarshal([]byte(raw), &parsed); err != nil {
-		return hashString(raw)
-	}
-	compact, err := json.Marshal(parsed)
-	if err != nil {
-		return hashString(raw)
-	}
-	return hashString(string(compact))
-}
-
-// hashString returns the hex-encoded SHA-256 hash of s.
-func hashString(s string) string {
-	h := sha256.Sum256([]byte(s))
-	return fmt.Sprintf("%x", h)
 }

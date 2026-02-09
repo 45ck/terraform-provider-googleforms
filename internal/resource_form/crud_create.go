@@ -170,6 +170,9 @@ func (r *FormResource) Create(
 
 	// For newly created items, we don't have google_item_ids yet, so we
 	// correlate by position: the API returns items in creation order.
+	// ASSUMPTION: The Google Forms API returns items in the same order
+	// they were created via batchUpdate. If the API ever reorders items,
+	// this positional mapping will produce incorrect item_key assignments.
 	if keyMap == nil && !plan.Items.IsNull() && !plan.Items.IsUnknown() {
 		var planItems []ItemModel
 		diags := plan.Items.ElementsAs(ctx, &planItems, false)
