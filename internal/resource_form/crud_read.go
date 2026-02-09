@@ -14,6 +14,7 @@ import (
 	"github.com/your-org/terraform-provider-googleforms/internal/convert"
 )
 
+// Read fetches the current state of a Google Form from the API.
 func (r *FormResource) Read(
 	ctx context.Context,
 	req resource.ReadRequest,

@@ -99,11 +99,11 @@ func tfGradingToConvert(g *GradingModel) *convert.GradingBlock {
 func convertFormModelToTFState(model *convert.FormModel, plan FormResourceModel) FormResourceModel {
 	state := FormResourceModel{
 		ID:            types.StringValue(model.ID),
-		Title:         plan.Title,
-		Description:   plan.Description,
+		Title:         types.StringValue(model.Title),
+		Description:   types.StringValue(model.Description),
 		Published:     plan.Published,
 		AcceptingResponses: plan.AcceptingResponses,
-		Quiz:          plan.Quiz,
+		Quiz:          types.BoolValue(model.Quiz),
 		ContentJSON:   plan.ContentJSON,
 		ResponderURI:  types.StringValue(model.ResponderURI),
 		DocumentTitle: types.StringValue(model.DocumentTitle),

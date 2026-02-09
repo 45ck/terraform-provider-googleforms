@@ -13,6 +13,7 @@ import (
 	"github.com/your-org/terraform-provider-googleforms/internal/client"
 )
 
+// Delete removes a Google Form by trashing it via the Drive API.
 func (r *FormResource) Delete(
 	ctx context.Context,
 	req resource.DeleteRequest,

@@ -6,7 +6,6 @@ package client
 import (
 	"context"
 	"fmt"
-	"os"
 
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
@@ -53,36 +52,18 @@ func NewClient(
 }
 
 // buildTokenSource creates an OAuth2 token source from credentials or ADC.
+// It trusts that the caller (provider.go) has already resolved credentials
+// from config and environment variables.
 func buildTokenSource(
 	ctx context.Context,
 	credentials string,
 	impersonateUser string,
 ) (oauth2.TokenSource, error) {
-	credJSON, err := resolveCredentials(credentials)
-	if err != nil {
-		return nil, err
-	}
-
-	if credJSON != nil {
-		return tokenSourceFromJSON(ctx, credJSON, impersonateUser)
+	if credentials != "" {
+		return tokenSourceFromJSON(ctx, []byte(credentials), impersonateUser)
 	}
 
 	return tokenSourceFromADC(ctx)
-}
-
-// resolveCredentials resolves credential JSON from the argument or env var.
-// Returns nil if neither is set (fall through to ADC).
-func resolveCredentials(credentials string) ([]byte, error) {
-	if credentials != "" {
-		return []byte(credentials), nil
-	}
-
-	envCreds := os.Getenv("GOOGLE_CREDENTIALS")
-	if envCreds != "" {
-		return []byte(envCreds), nil
-	}
-
-	return nil, nil
 }
 
 // tokenSourceFromJSON creates a token source from service account JSON.

@@ -1,6 +1,7 @@
 // Copyright 2026 terraform-provider-googleforms contributors
 // SPDX-License-Identifier: Apache-2.0
 
+// Package provider implements the Terraform provider for Google Forms.
 package provider
 
 import (

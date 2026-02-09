@@ -60,5 +60,5 @@ func wrapDriveAPIError(err error, operation string) error {
 		return fmt.Errorf("%s: %w", operation, err)
 	}
 
-	return mapStatusToError(gErr.Code, gErr.Message, operation)
+	return mapStatusToError(gErr.Code, gErr.Message, operation, "file")
 }

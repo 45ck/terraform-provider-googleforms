@@ -5,6 +5,7 @@ package resourceform
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -195,13 +196,20 @@ func (v ExactlyOneSubBlockValidator) ValidateResource(
 		return
 	}
 
-	for _, item := range itemModels {
+	for i, item := range itemModels {
 		count := countSubBlocks(item)
 		if count != 1 {
+			identity := fmt.Sprintf("index %d", i)
+			if key := item.ItemKey.ValueString(); key != "" {
+				identity = fmt.Sprintf("%q", key)
+			}
 			resp.Diagnostics.AddError(
 				"Invalid Item Configuration",
-				"Each item must have exactly one question type "+
-					"(multiple_choice, short_answer, or paragraph).",
+				fmt.Sprintf(
+					"Item %s must have exactly one question type "+
+						"(multiple_choice, short_answer, or paragraph), but has %d.",
+					identity, count,
+				),
 			)
 			return
 		}

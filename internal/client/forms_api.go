@@ -28,23 +28,14 @@ func NewFormsAPIClient(service *forms.Service, retry RetryConfig) *FormsAPIClien
 var _ FormsAPI = &FormsAPIClient{}
 
 // Create creates a new form via the Google Forms API.
+// Create is non-idempotent, so it must NOT be retried.
 func (c *FormsAPIClient) Create(
 	ctx context.Context,
 	form *forms.Form,
 ) (*forms.Form, error) {
-	var result *forms.Form
-
-	err := WithRetry(ctx, c.retry, func() error {
-		resp, apiErr := c.service.Forms.Create(form).Context(ctx).Do()
-		if apiErr != nil {
-			return wrapGoogleAPIError(apiErr, "create form")
-		}
-		result = resp
-		return nil
-	})
-
+	result, err := c.service.Forms.Create(form).Context(ctx).Do()
 	if err != nil {
-		return nil, fmt.Errorf("forms.Create: %w", err)
+		return nil, fmt.Errorf("forms.Create: %w", wrapGoogleAPIError(err, "create form"))
 	}
 
 	return result, nil
@@ -135,14 +126,15 @@ func wrapGoogleAPIError(err error, operation string) error {
 		return fmt.Errorf("%s: %w", operation, err)
 	}
 
-	return mapStatusToError(gErr.Code, gErr.Message, operation)
+	return mapStatusToError(gErr.Code, gErr.Message, operation, "form")
 }
 
 // mapStatusToError creates the appropriate error type for an HTTP status code.
-func mapStatusToError(code int, message, operation string) error {
+// The resource parameter identifies the API resource type (e.g. "form", "file").
+func mapStatusToError(code int, message, operation, resource string) error {
 	switch {
 	case code == http.StatusNotFound:
-		return &NotFoundError{Resource: "form", ID: operation}
+		return &NotFoundError{Resource: resource, ID: operation}
 	case code == http.StatusTooManyRequests:
 		return &RateLimitError{Message: message}
 	default:

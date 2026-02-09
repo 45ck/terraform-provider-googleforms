@@ -15,6 +15,7 @@ import (
 	"github.com/your-org/terraform-provider-googleforms/internal/convert"
 )
 
+// Create creates a new Google Form with the configured items and settings.
 func (r *FormResource) Create(
 	ctx context.Context,
 	req resource.CreateRequest,

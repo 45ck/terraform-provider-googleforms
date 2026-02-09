@@ -14,6 +14,7 @@ import (
 	"github.com/your-org/terraform-provider-googleforms/internal/convert"
 )
 
+// Update replaces the form's settings and items with the planned configuration.
 func (r *FormResource) Update(
 	ctx context.Context,
 	req resource.UpdateRequest,
@@ -43,6 +44,9 @@ func (r *FormResource) Update(
 	}
 
 	// Step 2: Build batch update requests.
+	// Order: (1) UpdateFormInfo, (2) delete items, (3) quiz settings, (4) create items.
+	// Item deletes MUST precede quiz settings changes so that disabling quiz
+	// mode does not fail due to still-existing graded items.
 	var requests []*forms.Request
 
 	// Always update title and description.
@@ -51,19 +55,13 @@ func (r *FormResource) Update(
 		plan.Description.ValueString(),
 	))
 
-	// Update quiz settings if changed.
-	planQuiz := plan.Quiz.ValueBool()
-	stateQuiz := state.Quiz.ValueBool()
-	if planQuiz != stateQuiz {
-		tflog.Debug(ctx, "updating quiz settings", map[string]interface{}{
-			"quiz": planQuiz,
-		})
-		requests = append(requests, convert.BuildQuizSettingsRequest(planQuiz))
-	}
-
 	// Step 3: Handle item changes using replace-all strategy.
 	// Delete all existing items, then create all items from plan.
 	existingItemCount := len(currentForm.Items)
+
+	// Collect create-item requests separately so we can insert quiz settings
+	// between deletes and creates.
+	var createItemRequests []*forms.Request
 
 	if !plan.ContentJSON.IsNull() && !plan.ContentJSON.IsUnknown() && plan.ContentJSON.ValueString() != "" {
 		// content_json mode
@@ -81,7 +79,7 @@ func (r *FormResource) Update(
 			)
 			return
 		}
-		requests = append(requests, jsonRequests...)
+		createItemRequests = jsonRequests
 	} else {
 		// HCL item blocks mode
 		convertItems, diags := tfItemsToConvertItems(ctx, plan.Items)
@@ -112,10 +110,23 @@ func (r *FormResource) Update(
 					)
 					return
 				}
-				requests = append(requests, itemRequests...)
+				createItemRequests = itemRequests
 			}
 		}
 	}
+
+	// Update quiz settings if changed (after deletes, before creates).
+	planQuiz := plan.Quiz.ValueBool()
+	stateQuiz := state.Quiz.ValueBool()
+	if planQuiz != stateQuiz {
+		tflog.Debug(ctx, "updating quiz settings", map[string]interface{}{
+			"quiz": planQuiz,
+		})
+		requests = append(requests, convert.BuildQuizSettingsRequest(planQuiz))
+	}
+
+	// Append create-item requests after quiz settings.
+	requests = append(requests, createItemRequests...)
 
 	// Step 4: Execute batchUpdate.
 	if len(requests) > 0 {
