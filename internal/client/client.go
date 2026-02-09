@@ -1,0 +1,140 @@
+// Copyright 2026 terraform-provider-googleforms contributors
+// SPDX-License-Identifier: Apache-2.0
+
+package client
+
+import (
+	"context"
+	"fmt"
+	"os"
+
+	"golang.org/x/oauth2"
+	"golang.org/x/oauth2/google"
+	drive "google.golang.org/api/drive/v3"
+	forms "google.golang.org/api/forms/v1"
+	"google.golang.org/api/option"
+)
+
+// requiredScopes lists the OAuth2 scopes needed for the provider.
+var requiredScopes = []string{
+	forms.FormsBodyScope,
+	drive.DriveFileScope,
+}
+
+// NewClient creates a new Client with real Google API implementations.
+// credentials is the service account JSON content or empty for ADC.
+// impersonateUser is the email to impersonate via domain-wide delegation.
+func NewClient(
+	ctx context.Context,
+	credentials string,
+	impersonateUser string,
+) (*Client, error) {
+	tokenSource, err := buildTokenSource(ctx, credentials, impersonateUser)
+	if err != nil {
+		return nil, fmt.Errorf("building token source: %w", err)
+	}
+
+	formsService, err := createFormsService(ctx, tokenSource)
+	if err != nil {
+		return nil, fmt.Errorf("creating forms service: %w", err)
+	}
+
+	driveService, err := createDriveService(ctx, tokenSource)
+	if err != nil {
+		return nil, fmt.Errorf("creating drive service: %w", err)
+	}
+
+	retryCfg := DefaultRetryConfig()
+
+	return &Client{
+		Forms: NewFormsAPIClient(formsService, retryCfg),
+		Drive: NewDriveAPIClient(driveService, retryCfg),
+	}, nil
+}
+
+// buildTokenSource creates an OAuth2 token source from credentials or ADC.
+func buildTokenSource(
+	ctx context.Context,
+	credentials string,
+	impersonateUser string,
+) (oauth2.TokenSource, error) {
+	credJSON, err := resolveCredentials(credentials)
+	if err != nil {
+		return nil, err
+	}
+
+	if credJSON != nil {
+		return tokenSourceFromJSON(ctx, credJSON, impersonateUser)
+	}
+
+	return tokenSourceFromADC(ctx)
+}
+
+// resolveCredentials resolves credential JSON from the argument or env var.
+// Returns nil if neither is set (fall through to ADC).
+func resolveCredentials(credentials string) ([]byte, error) {
+	if credentials != "" {
+		return []byte(credentials), nil
+	}
+
+	envCreds := os.Getenv("GOOGLE_CREDENTIALS")
+	if envCreds != "" {
+		return []byte(envCreds), nil
+	}
+
+	return nil, nil
+}
+
+// tokenSourceFromJSON creates a token source from service account JSON.
+func tokenSourceFromJSON(
+	ctx context.Context,
+	credJSON []byte,
+	impersonateUser string,
+) (oauth2.TokenSource, error) {
+	config, err := google.JWTConfigFromJSON(credJSON, requiredScopes...)
+	if err != nil {
+		return nil, fmt.Errorf("parsing service account credentials: %w", err)
+	}
+
+	if impersonateUser != "" {
+		config.Subject = impersonateUser
+	}
+
+	return config.TokenSource(ctx), nil
+}
+
+// tokenSourceFromADC creates a token source from application default credentials.
+func tokenSourceFromADC(ctx context.Context) (oauth2.TokenSource, error) {
+	creds, err := google.FindDefaultCredentials(ctx, requiredScopes...)
+	if err != nil {
+		return nil, fmt.Errorf("finding default credentials: %w", err)
+	}
+
+	return creds.TokenSource, nil
+}
+
+// createFormsService creates a Google Forms API service.
+func createFormsService(
+	ctx context.Context,
+	ts oauth2.TokenSource,
+) (*forms.Service, error) {
+	svc, err := forms.NewService(ctx, option.WithTokenSource(ts))
+	if err != nil {
+		return nil, fmt.Errorf("initializing forms service: %w", err)
+	}
+
+	return svc, nil
+}
+
+// createDriveService creates a Google Drive API service.
+func createDriveService(
+	ctx context.Context,
+	ts oauth2.TokenSource,
+) (*drive.Service, error) {
+	svc, err := drive.NewService(ctx, option.WithTokenSource(ts))
+	if err != nil {
+		return nil, fmt.Errorf("initializing drive service: %w", err)
+	}
+
+	return svc, nil
+}
