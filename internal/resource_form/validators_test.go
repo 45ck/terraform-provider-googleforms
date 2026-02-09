@@ -236,6 +236,7 @@ func itemListVal(items ...tftypes.Value) tftypes.Value {
 // ---------------------------------------------------------------------------
 
 func TestMutuallyExclusiveValidator_BothSet_ReturnsError(t *testing.T) {
+	t.Parallel()
 	cfg := buildConfig(t, map[string]tftypes.Value{
 		"title":        tftypes.NewValue(tftypes.String, "T"),
 		"content_json": tftypes.NewValue(tftypes.String, `[{"type":"short_answer"}]`),
@@ -246,6 +247,7 @@ func TestMutuallyExclusiveValidator_BothSet_ReturnsError(t *testing.T) {
 }
 
 func TestMutuallyExclusiveValidator_OnlyItems_Passes(t *testing.T) {
+	t.Parallel()
 	cfg := buildConfig(t, map[string]tftypes.Value{
 		"title": tftypes.NewValue(tftypes.String, "T"),
 		"item":  itemListVal(saItem("q1", "Question?", nil)),
@@ -255,6 +257,7 @@ func TestMutuallyExclusiveValidator_OnlyItems_Passes(t *testing.T) {
 }
 
 func TestMutuallyExclusiveValidator_OnlyContentJSON_Passes(t *testing.T) {
+	t.Parallel()
 	cfg := buildConfig(t, map[string]tftypes.Value{
 		"title":        tftypes.NewValue(tftypes.String, "T"),
 		"content_json": tftypes.NewValue(tftypes.String, `[{"type":"short_answer"}]`),
@@ -264,6 +267,7 @@ func TestMutuallyExclusiveValidator_OnlyContentJSON_Passes(t *testing.T) {
 }
 
 func TestMutuallyExclusiveValidator_NeitherSet_Passes(t *testing.T) {
+	t.Parallel()
 	cfg := buildConfig(t, map[string]tftypes.Value{
 		"title": tftypes.NewValue(tftypes.String, "T"),
 	})
@@ -272,6 +276,7 @@ func TestMutuallyExclusiveValidator_NeitherSet_Passes(t *testing.T) {
 }
 
 func TestMutuallyExclusive_EmptyContentJSON_WithItems_Error(t *testing.T) {
+	t.Parallel()
 	// Empty string is not null/unknown, so the validator treats it as "set".
 	// Combined with items, this should trigger the mutually exclusive error.
 	cfg := buildConfig(t, map[string]tftypes.Value{
@@ -288,6 +293,7 @@ func TestMutuallyExclusive_EmptyContentJSON_WithItems_Error(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestAcceptingResponsesRequiresPublished_BothTrue_Passes(t *testing.T) {
+	t.Parallel()
 	cfg := buildConfig(t, map[string]tftypes.Value{
 		"title":               tftypes.NewValue(tftypes.String, "T"),
 		"published":           tftypes.NewValue(tftypes.Bool, true),
@@ -298,6 +304,7 @@ func TestAcceptingResponsesRequiresPublished_BothTrue_Passes(t *testing.T) {
 }
 
 func TestAcceptingResponsesRequiresPublished_AcceptingTruePublishedFalse_Error(t *testing.T) {
+	t.Parallel()
 	cfg := buildConfig(t, map[string]tftypes.Value{
 		"title":               tftypes.NewValue(tftypes.String, "T"),
 		"published":           tftypes.NewValue(tftypes.Bool, false),
@@ -308,6 +315,7 @@ func TestAcceptingResponsesRequiresPublished_AcceptingTruePublishedFalse_Error(t
 }
 
 func TestAcceptingResponsesRequiresPublished_AcceptingFalse_Passes(t *testing.T) {
+	t.Parallel()
 	cfg := buildConfig(t, map[string]tftypes.Value{
 		"title":               tftypes.NewValue(tftypes.String, "T"),
 		"published":           tftypes.NewValue(tftypes.Bool, false),
@@ -322,6 +330,7 @@ func TestAcceptingResponsesRequiresPublished_AcceptingFalse_Passes(t *testing.T)
 // ---------------------------------------------------------------------------
 
 func TestUniqueItemKeyValidator_UniqueKeys_Passes(t *testing.T) {
+	t.Parallel()
 	cfg := buildConfig(t, map[string]tftypes.Value{
 		"title": tftypes.NewValue(tftypes.String, "T"),
 		"item": itemListVal(
@@ -334,6 +343,7 @@ func TestUniqueItemKeyValidator_UniqueKeys_Passes(t *testing.T) {
 }
 
 func TestUniqueItemKeyValidator_DuplicateKeys_Error(t *testing.T) {
+	t.Parallel()
 	cfg := buildConfig(t, map[string]tftypes.Value{
 		"title": tftypes.NewValue(tftypes.String, "T"),
 		"item": itemListVal(
@@ -346,6 +356,7 @@ func TestUniqueItemKeyValidator_DuplicateKeys_Error(t *testing.T) {
 }
 
 func TestUniqueItemKeyValidator_EmptyItems_Passes(t *testing.T) {
+	t.Parallel()
 	cfg := buildConfig(t, map[string]tftypes.Value{
 		"title": tftypes.NewValue(tftypes.String, "T"),
 	})
@@ -358,6 +369,7 @@ func TestUniqueItemKeyValidator_EmptyItems_Passes(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestExactlyOneSubBlockValidator_OneSet_Passes(t *testing.T) {
+	t.Parallel()
 	cfg := buildConfig(t, map[string]tftypes.Value{
 		"title": tftypes.NewValue(tftypes.String, "T"),
 		"item":  itemListVal(saItem("q1", "Q?", nil)),
@@ -367,6 +379,7 @@ func TestExactlyOneSubBlockValidator_OneSet_Passes(t *testing.T) {
 }
 
 func TestExactlyOneSubBlockValidator_NoneSet_Error(t *testing.T) {
+	t.Parallel()
 	cfg := buildConfig(t, map[string]tftypes.Value{
 		"title": tftypes.NewValue(tftypes.String, "T"),
 		"item":  itemListVal(bareItem("q1")),
@@ -376,6 +389,7 @@ func TestExactlyOneSubBlockValidator_NoneSet_Error(t *testing.T) {
 }
 
 func TestExactlyOneSubBlockValidator_TwoSet_Error(t *testing.T) {
+	t.Parallel()
 	iType := itemBlockType()
 	gType := iType.AttributeTypes["short_answer"].(tftypes.Object).AttributeTypes["grading"]
 

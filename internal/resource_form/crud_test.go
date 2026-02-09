@@ -155,6 +155,9 @@ func TestCreate_BasicForm_Success(t *testing.T) {
 		GetFunc: func(_ context.Context, formID string) (*forms.Form, error) {
 			return basicFormResponse(formID, "My Form"), nil
 		},
+		BatchUpdateFunc: func(_ context.Context, _ string, _ *forms.BatchUpdateFormRequest) (*forms.BatchUpdateFormResponse, error) {
+			return &forms.BatchUpdateFormResponse{}, nil
+		},
 	}
 	mockDrive := &testutil.MockDriveAPI{}
 

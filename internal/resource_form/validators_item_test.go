@@ -15,6 +15,7 @@ import (
 // ---------------------------------------------------------------------------
 
 func TestOptionsRequiredForChoice_WithOptions_Passes(t *testing.T) {
+	t.Parallel()
 	cfg := buildConfig(t, map[string]tftypes.Value{
 		"title": tftypes.NewValue(tftypes.String, "T"),
 		"item":  itemListVal(mcItem("q1", "Pick one?", []string{"A", "B"}, nil)),
@@ -24,6 +25,7 @@ func TestOptionsRequiredForChoice_WithOptions_Passes(t *testing.T) {
 }
 
 func TestOptionsRequiredForChoice_EmptyOptions_Error(t *testing.T) {
+	t.Parallel()
 	cfg := buildConfig(t, map[string]tftypes.Value{
 		"title": tftypes.NewValue(tftypes.String, "T"),
 		"item":  itemListVal(mcItem("q1", "Pick one?", []string{}, nil)),
@@ -37,6 +39,7 @@ func TestOptionsRequiredForChoice_EmptyOptions_Error(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestCorrectAnswerInOptions_ValidAnswer_Passes(t *testing.T) {
+	t.Parallel()
 	grading := &map[string]tftypes.Value{
 		"points":             tftypes.NewValue(tftypes.Number, 10),
 		"correct_answer":     tftypes.NewValue(tftypes.String, "B"),
@@ -53,6 +56,7 @@ func TestCorrectAnswerInOptions_ValidAnswer_Passes(t *testing.T) {
 }
 
 func TestCorrectAnswerInOptions_InvalidAnswer_Error(t *testing.T) {
+	t.Parallel()
 	grading := &map[string]tftypes.Value{
 		"points":             tftypes.NewValue(tftypes.Number, 10),
 		"correct_answer":     tftypes.NewValue(tftypes.String, "D"),
@@ -69,6 +73,7 @@ func TestCorrectAnswerInOptions_InvalidAnswer_Error(t *testing.T) {
 }
 
 func TestCorrectAnswerInOptions_NoCorrectAnswer_Passes(t *testing.T) {
+	t.Parallel()
 	grading := &map[string]tftypes.Value{
 		"points":             tftypes.NewValue(tftypes.Number, 10),
 		"correct_answer":     tftypes.NewValue(tftypes.String, nil),
@@ -89,6 +94,7 @@ func TestCorrectAnswerInOptions_NoCorrectAnswer_Passes(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestGradingRequiresQuiz_QuizTrueWithGrading_Passes(t *testing.T) {
+	t.Parallel()
 	grading := &map[string]tftypes.Value{
 		"points":             tftypes.NewValue(tftypes.Number, 5),
 		"correct_answer":     tftypes.NewValue(tftypes.String, nil),
@@ -105,6 +111,7 @@ func TestGradingRequiresQuiz_QuizTrueWithGrading_Passes(t *testing.T) {
 }
 
 func TestGradingRequiresQuiz_QuizFalseWithGrading_Error(t *testing.T) {
+	t.Parallel()
 	grading := &map[string]tftypes.Value{
 		"points":             tftypes.NewValue(tftypes.Number, 5),
 		"correct_answer":     tftypes.NewValue(tftypes.String, nil),
@@ -121,6 +128,7 @@ func TestGradingRequiresQuiz_QuizFalseWithGrading_Error(t *testing.T) {
 }
 
 func TestGradingRequiresQuiz_NoGrading_Passes(t *testing.T) {
+	t.Parallel()
 	cfg := buildConfig(t, map[string]tftypes.Value{
 		"title": tftypes.NewValue(tftypes.String, "T"),
 		"quiz":  tftypes.NewValue(tftypes.Bool, false),
@@ -131,6 +139,7 @@ func TestGradingRequiresQuiz_NoGrading_Passes(t *testing.T) {
 }
 
 func TestGradingRequiresQuiz_MultipleChoice_Error(t *testing.T) {
+	t.Parallel()
 	grading := &map[string]tftypes.Value{
 		"points":             tftypes.NewValue(tftypes.Number, 5),
 		"correct_answer":     tftypes.NewValue(tftypes.String, "A"),
@@ -147,6 +156,7 @@ func TestGradingRequiresQuiz_MultipleChoice_Error(t *testing.T) {
 }
 
 func TestGradingRequiresQuiz_Paragraph_Error(t *testing.T) {
+	t.Parallel()
 	grading := &map[string]tftypes.Value{
 		"points":             tftypes.NewValue(tftypes.Number, 5),
 		"correct_answer":     tftypes.NewValue(tftypes.String, nil),
@@ -167,6 +177,7 @@ func TestGradingRequiresQuiz_Paragraph_Error(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestConfigValidators_ReturnsAllSeven(t *testing.T) {
+	t.Parallel()
 	r := &FormResource{}
 	validators := r.ConfigValidators(context.Background())
 	if len(validators) != 7 {

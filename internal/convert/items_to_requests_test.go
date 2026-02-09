@@ -15,6 +15,7 @@ import (
 // ---------------------------------------------------------------------------
 
 func TestMultipleChoiceToRequest_Basic(t *testing.T) {
+	t.Parallel()
 	item := ItemModel{
 		Title: "Favorite color?",
 		MultipleChoice: &MultipleChoiceBlock{
@@ -60,6 +61,7 @@ func TestMultipleChoiceToRequest_Basic(t *testing.T) {
 }
 
 func TestMultipleChoiceToRequest_WithGrading(t *testing.T) {
+	t.Parallel()
 	item := ItemModel{
 		Title: "Capital of France?",
 		MultipleChoice: &MultipleChoiceBlock{
@@ -101,6 +103,7 @@ func TestMultipleChoiceToRequest_WithGrading(t *testing.T) {
 }
 
 func TestMultipleChoiceToRequest_Required(t *testing.T) {
+	t.Parallel()
 	item := ItemModel{
 		Title: "Pick one",
 		MultipleChoice: &MultipleChoiceBlock{
@@ -125,6 +128,7 @@ func TestMultipleChoiceToRequest_Required(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestShortAnswerToRequest_Basic(t *testing.T) {
+	t.Parallel()
 	item := ItemModel{
 		Title: "Your name?",
 		ShortAnswer: &ShortAnswerBlock{},
@@ -152,6 +156,7 @@ func TestShortAnswerToRequest_Basic(t *testing.T) {
 }
 
 func TestShortAnswerToRequest_WithGrading(t *testing.T) {
+	t.Parallel()
 	item := ItemModel{
 		Title: "Capital of Italy?",
 		ShortAnswer: &ShortAnswerBlock{
@@ -184,6 +189,7 @@ func TestShortAnswerToRequest_WithGrading(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestParagraphToRequest_Basic(t *testing.T) {
+	t.Parallel()
 	item := ItemModel{
 		Title:     "Tell us about yourself",
 		Paragraph: &ParagraphBlock{},
@@ -208,6 +214,7 @@ func TestParagraphToRequest_Basic(t *testing.T) {
 }
 
 func TestParagraphToRequest_WithGrading(t *testing.T) {
+	t.Parallel()
 	item := ItemModel{
 		Title: "Essay question",
 		Paragraph: &ParagraphBlock{
@@ -240,6 +247,7 @@ func TestParagraphToRequest_WithGrading(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestItemsToCreateRequests_MultipleItems_CorrectOrder(t *testing.T) {
+	t.Parallel()
 	items := []ItemModel{
 		{Title: "Q1", ShortAnswer: &ShortAnswerBlock{}},
 		{Title: "Q2", Paragraph: &ParagraphBlock{}},
@@ -270,6 +278,7 @@ func TestItemsToCreateRequests_MultipleItems_CorrectOrder(t *testing.T) {
 }
 
 func TestItemsToCreateRequests_EmptyList(t *testing.T) {
+	t.Parallel()
 	reqs, err := ItemsToCreateRequests(nil)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -280,6 +289,7 @@ func TestItemsToCreateRequests_EmptyList(t *testing.T) {
 }
 
 func TestItemsToCreateRequests_SingleItem(t *testing.T) {
+	t.Parallel()
 	items := []ItemModel{
 		{Title: "Only question", ShortAnswer: &ShortAnswerBlock{}},
 	}
@@ -301,6 +311,7 @@ func TestItemsToCreateRequests_SingleItem(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestBuildDeleteRequests_MultipleItems_ReverseOrder(t *testing.T) {
+	t.Parallel()
 	reqs := BuildDeleteRequests(4)
 
 	if len(reqs) != 4 {
@@ -321,6 +332,7 @@ func TestBuildDeleteRequests_MultipleItems_ReverseOrder(t *testing.T) {
 }
 
 func TestBuildDeleteRequests_EmptyList(t *testing.T) {
+	t.Parallel()
 	reqs := BuildDeleteRequests(0)
 	if len(reqs) != 0 {
 		t.Errorf("count = %d, want 0", len(reqs))
@@ -332,6 +344,7 @@ func TestBuildDeleteRequests_EmptyList(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestBuildUpdateInfoRequest_TitleAndDescription(t *testing.T) {
+	t.Parallel()
 	req := BuildUpdateInfoRequest("My Form", "A description")
 
 	ui := req.UpdateFormInfo
@@ -350,6 +363,7 @@ func TestBuildUpdateInfoRequest_TitleAndDescription(t *testing.T) {
 }
 
 func TestBuildUpdateInfoRequest_DescriptionOnly(t *testing.T) {
+	t.Parallel()
 	req := BuildUpdateInfoRequest("", "Only desc")
 
 	ui := req.UpdateFormInfo
@@ -369,6 +383,7 @@ func TestBuildUpdateInfoRequest_DescriptionOnly(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestBuildQuizSettingsRequest_EnableQuiz(t *testing.T) {
+	t.Parallel()
 	req := BuildQuizSettingsRequest(true)
 
 	us := req.UpdateSettings
@@ -387,6 +402,7 @@ func TestBuildQuizSettingsRequest_EnableQuiz(t *testing.T) {
 }
 
 func TestBuildQuizSettingsRequest_DisableQuiz(t *testing.T) {
+	t.Parallel()
 	req := BuildQuizSettingsRequest(false)
 
 	us := req.UpdateSettings
@@ -403,6 +419,7 @@ func TestBuildQuizSettingsRequest_DisableQuiz(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestItemModelToCreateRequest_NoQuestionBlock(t *testing.T) {
+	t.Parallel()
 	item := ItemModel{
 		Title:          "Empty item",
 		MultipleChoice: nil,
@@ -421,6 +438,7 @@ func TestItemModelToCreateRequest_NoQuestionBlock(t *testing.T) {
 }
 
 func TestFormsImportUsed(t *testing.T) {
+	t.Parallel()
 	// This test simply ensures the forms import is used in tests.
 	_ = &forms.Form{}
 }
