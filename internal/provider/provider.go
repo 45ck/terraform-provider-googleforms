@@ -18,6 +18,9 @@ import (
 
 	"github.com/45ck/terraform-provider-googleforms/internal/client"
 	resourceform "github.com/45ck/terraform-provider-googleforms/internal/resource_form"
+	resourceresponsesheet "github.com/45ck/terraform-provider-googleforms/internal/resource_response_sheet"
+	resourcesheet "github.com/45ck/terraform-provider-googleforms/internal/resource_sheet"
+	resourcespreadsheet "github.com/45ck/terraform-provider-googleforms/internal/resource_spreadsheet"
 )
 
 var _ provider.Provider = &GoogleFormsProvider{}
@@ -162,6 +165,9 @@ func (p *GoogleFormsProvider) Resources(
 ) []func() resource.Resource {
 	return []func() resource.Resource{
 		resourceform.NewFormResource,
+		resourcespreadsheet.NewSpreadsheetResource,
+		resourcesheet.NewSheetResource,
+		resourceresponsesheet.NewResponseSheetResource,
 	}
 }
 
