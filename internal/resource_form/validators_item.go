@@ -47,16 +47,35 @@ func (v OptionsRequiredForChoiceValidator) ValidateResource(
 	}
 
 	for _, item := range itemModels {
-		if item.MultipleChoice == nil {
-			continue
+		if item.MultipleChoice != nil {
+			opts := item.MultipleChoice.Options
+			if opts.IsNull() || opts.IsUnknown() || len(opts.Elements()) == 0 {
+				resp.Diagnostics.AddError(
+					"Missing Options",
+					"A multiple_choice question requires at least one option.",
+				)
+				return
+			}
 		}
-		opts := item.MultipleChoice.Options
-		if opts.IsNull() || opts.IsUnknown() || len(opts.Elements()) == 0 {
-			resp.Diagnostics.AddError(
-				"Missing Options",
-				"A multiple_choice question requires at least one option.",
-			)
-			return
+		if item.Dropdown != nil {
+			opts := item.Dropdown.Options
+			if opts.IsNull() || opts.IsUnknown() || len(opts.Elements()) == 0 {
+				resp.Diagnostics.AddError(
+					"Missing Options",
+					"A dropdown question requires at least one option.",
+				)
+				return
+			}
+		}
+		if item.Checkbox != nil {
+			opts := item.Checkbox.Options
+			if opts.IsNull() || opts.IsUnknown() || len(opts.Elements()) == 0 {
+				resp.Diagnostics.AddError(
+					"Missing Options",
+					"A checkbox question requires at least one option.",
+				)
+				return
+			}
 		}
 	}
 }
@@ -97,23 +116,29 @@ func (v CorrectAnswerInOptionsValidator) ValidateResource(
 	}
 
 	for _, item := range itemModels {
-		if item.MultipleChoice == nil || item.MultipleChoice.Grading == nil {
-			continue
+		if item.MultipleChoice != nil && item.MultipleChoice.Grading != nil {
+			checkCorrectAnswerInChoiceOptions(ctx, item.MultipleChoice.Grading, item.MultipleChoice.Options, resp)
+			if resp.Diagnostics.HasError() {
+				return
+			}
 		}
-		checkCorrectAnswerInOptions(ctx, item.MultipleChoice, resp)
-		if resp.Diagnostics.HasError() {
-			return
+		if item.Dropdown != nil && item.Dropdown.Grading != nil {
+			checkCorrectAnswerInChoiceOptions(ctx, item.Dropdown.Grading, item.Dropdown.Options, resp)
+			if resp.Diagnostics.HasError() {
+				return
+			}
 		}
 	}
 }
 
-// checkCorrectAnswerInOptions validates a single multiple_choice grading.
-func checkCorrectAnswerInOptions(
+// checkCorrectAnswerInChoiceOptions validates that the correct_answer is in the options list.
+func checkCorrectAnswerInChoiceOptions(
 	ctx context.Context,
-	mc *MultipleChoiceModel,
+	grading *GradingModel,
+	optionsList types.List,
 	resp *resource.ValidateConfigResponse,
 ) {
-	answer := mc.Grading.CorrectAnswer
+	answer := grading.CorrectAnswer
 	if answer.IsNull() || answer.IsUnknown() {
 		return
 	}
@@ -121,7 +146,7 @@ func checkCorrectAnswerInOptions(
 	answerVal := answer.ValueString()
 
 	var options []types.String
-	resp.Diagnostics.Append(mc.Options.ElementsAs(ctx, &options, false)...)
+	resp.Diagnostics.Append(optionsList.ElementsAs(ctx, &options, false)...)
 
 	if resp.Diagnostics.HasError() {
 		return
@@ -217,6 +242,12 @@ func itemHasGrading(item ItemModel) bool {
 		return true
 	}
 	if item.Paragraph != nil && item.Paragraph.Grading != nil {
+		return true
+	}
+	if item.Dropdown != nil && item.Dropdown.Grading != nil {
+		return true
+	}
+	if item.Checkbox != nil && item.Checkbox.Grading != nil {
 		return true
 	}
 	return false

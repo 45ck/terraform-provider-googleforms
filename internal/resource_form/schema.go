@@ -187,6 +187,138 @@ func itemBlocks() map[string]schema.Block {
 				"grading": gradingBlock,
 			},
 		},
+		"dropdown": schema.SingleNestedBlock{
+			Description: "A dropdown (select) question.",
+			Attributes: map[string]schema.Attribute{
+				"question_text": schema.StringAttribute{
+					Required:    true,
+					Description: "The question text.",
+				},
+				"options": schema.ListAttribute{
+					Required:    true,
+					ElementType: types.StringType,
+					Description: "List of answer options. Must have at least one.",
+				},
+				"required": schema.BoolAttribute{
+					Optional:    true,
+					Computed:    true,
+					Default:     booldefault.StaticBool(false),
+					Description: "Whether the question is required.",
+				},
+			},
+			Blocks: map[string]schema.Block{
+				"grading": gradingBlock,
+			},
+		},
+		"checkbox": schema.SingleNestedBlock{
+			Description: "A checkbox (multi-select) question.",
+			Attributes: map[string]schema.Attribute{
+				"question_text": schema.StringAttribute{
+					Required:    true,
+					Description: "The question text.",
+				},
+				"options": schema.ListAttribute{
+					Required:    true,
+					ElementType: types.StringType,
+					Description: "List of answer options. Must have at least one.",
+				},
+				"required": schema.BoolAttribute{
+					Optional:    true,
+					Computed:    true,
+					Default:     booldefault.StaticBool(false),
+					Description: "Whether the question is required.",
+				},
+			},
+			Blocks: map[string]schema.Block{
+				"grading": gradingBlock,
+			},
+		},
+		"date": schema.SingleNestedBlock{
+			Description: "A date question (no time component).",
+			Attributes: map[string]schema.Attribute{
+				"question_text": schema.StringAttribute{
+					Required:    true,
+					Description: "The question text.",
+				},
+				"required": schema.BoolAttribute{
+					Optional:    true,
+					Computed:    true,
+					Default:     booldefault.StaticBool(false),
+					Description: "Whether the question is required.",
+				},
+				"include_year": schema.BoolAttribute{
+					Optional:    true,
+					Computed:    true,
+					Default:     booldefault.StaticBool(true),
+					Description: "Whether to include the year field. Defaults to true.",
+				},
+			},
+		},
+		"date_time": schema.SingleNestedBlock{
+			Description: "A date and time question.",
+			Attributes: map[string]schema.Attribute{
+				"question_text": schema.StringAttribute{
+					Required:    true,
+					Description: "The question text.",
+				},
+				"required": schema.BoolAttribute{
+					Optional:    true,
+					Computed:    true,
+					Default:     booldefault.StaticBool(false),
+					Description: "Whether the question is required.",
+				},
+				"include_year": schema.BoolAttribute{
+					Optional:    true,
+					Computed:    true,
+					Default:     booldefault.StaticBool(true),
+					Description: "Whether to include the year field. Defaults to true.",
+				},
+			},
+		},
+		"scale": schema.SingleNestedBlock{
+			Description: "A linear scale question.",
+			Attributes: map[string]schema.Attribute{
+				"question_text": schema.StringAttribute{
+					Required:    true,
+					Description: "The question text.",
+				},
+				"required": schema.BoolAttribute{
+					Optional:    true,
+					Computed:    true,
+					Default:     booldefault.StaticBool(false),
+					Description: "Whether the question is required.",
+				},
+				"low": schema.Int64Attribute{
+					Optional:    true,
+					Description: "The lowest value on the scale. Defaults to 1.",
+				},
+				"high": schema.Int64Attribute{
+					Optional:    true,
+					Description: "The highest value on the scale. Defaults to 5.",
+				},
+				"low_label": schema.StringAttribute{
+					Optional:    true,
+					Description: "Label for the lowest value.",
+				},
+				"high_label": schema.StringAttribute{
+					Optional:    true,
+					Description: "Label for the highest value.",
+				},
+			},
+		},
+		"section_header": schema.SingleNestedBlock{
+			Description: "A section header / page break. Has title and description but no question.",
+			Attributes: map[string]schema.Attribute{
+				"title": schema.StringAttribute{
+					Required:    true,
+					Description: "The section title.",
+				},
+				"description": schema.StringAttribute{
+					Optional:    true,
+					Description: "The section description.",
+				},
+			},
+		},
 	}
 }
 

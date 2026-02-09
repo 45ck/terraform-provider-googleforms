@@ -10,7 +10,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 
-	"github.com/your-org/terraform-provider-googleforms/internal/convert"
+	"github.com/45ck/terraform-provider-googleforms/internal/convert"
 )
 
 // tfItemsToConvertItems extracts items from the Terraform plan's types.List
@@ -78,6 +78,80 @@ func tfItemsToConvertItems(ctx context.Context, items types.List) ([]convert.Ite
 			}
 			result[i].Paragraph = p
 			result[i].Title = p.QuestionText
+		}
+
+		if tf.Dropdown != nil {
+			dd := &convert.DropdownBlock{
+				QuestionText: tf.Dropdown.QuestionText.ValueString(),
+				Required:     tf.Dropdown.Required.ValueBool(),
+			}
+			var opts []string
+			diags.Append(tf.Dropdown.Options.ElementsAs(ctx, &opts, false)...)
+			if diags.HasError() {
+				return nil, diags
+			}
+			dd.Options = opts
+			if tf.Dropdown.Grading != nil {
+				dd.Grading = tfGradingToConvert(tf.Dropdown.Grading)
+			}
+			result[i].Dropdown = dd
+			result[i].Title = dd.QuestionText
+		}
+
+		if tf.Checkbox != nil {
+			cb := &convert.CheckboxBlock{
+				QuestionText: tf.Checkbox.QuestionText.ValueString(),
+				Required:     tf.Checkbox.Required.ValueBool(),
+			}
+			var opts []string
+			diags.Append(tf.Checkbox.Options.ElementsAs(ctx, &opts, false)...)
+			if diags.HasError() {
+				return nil, diags
+			}
+			cb.Options = opts
+			if tf.Checkbox.Grading != nil {
+				cb.Grading = tfGradingToConvert(tf.Checkbox.Grading)
+			}
+			result[i].Checkbox = cb
+			result[i].Title = cb.QuestionText
+		}
+
+		if tf.Date != nil {
+			result[i].Date = &convert.DateBlock{
+				QuestionText: tf.Date.QuestionText.ValueString(),
+				Required:     tf.Date.Required.ValueBool(),
+				IncludeYear:  tf.Date.IncludeYear.ValueBool(),
+			}
+			result[i].Title = tf.Date.QuestionText.ValueString()
+		}
+
+		if tf.DateTime != nil {
+			result[i].DateTime = &convert.DateTimeBlock{
+				QuestionText: tf.DateTime.QuestionText.ValueString(),
+				Required:     tf.DateTime.Required.ValueBool(),
+				IncludeYear:  tf.DateTime.IncludeYear.ValueBool(),
+			}
+			result[i].Title = tf.DateTime.QuestionText.ValueString()
+		}
+
+		if tf.Scale != nil {
+			result[i].Scale = &convert.ScaleBlock{
+				QuestionText: tf.Scale.QuestionText.ValueString(),
+				Required:     tf.Scale.Required.ValueBool(),
+				Low:          tf.Scale.Low.ValueInt64(),
+				High:         tf.Scale.High.ValueInt64(),
+				LowLabel:     tf.Scale.LowLabel.ValueString(),
+				HighLabel:    tf.Scale.HighLabel.ValueString(),
+			}
+			result[i].Title = tf.Scale.QuestionText.ValueString()
+		}
+
+		if tf.SectionHeader != nil {
+			result[i].SectionHeader = &convert.SectionHeaderBlock{
+				Title:       tf.SectionHeader.Title.ValueString(),
+				Description: tf.SectionHeader.Description.ValueString(),
+			}
+			result[i].Title = tf.SectionHeader.Title.ValueString()
 		}
 	}
 
@@ -210,6 +284,82 @@ func convertItemModelToTF(ctx context.Context, item convert.ItemModel, diags *di
 		}
 	}
 
+	if item.Dropdown != nil {
+		dd := item.Dropdown
+		opts, d := types.ListValueFrom(ctx, types.StringType, dd.Options)
+		diags.Append(d...)
+		tf.Dropdown = &DropdownModel{
+			QuestionText: types.StringValue(dd.QuestionText),
+			Options:      opts,
+			Required:     types.BoolValue(dd.Required),
+		}
+		if dd.Grading != nil {
+			tf.Dropdown.Grading = convertGradingToTF(dd.Grading)
+		}
+	}
+
+	if item.Checkbox != nil {
+		cb := item.Checkbox
+		opts, d := types.ListValueFrom(ctx, types.StringType, cb.Options)
+		diags.Append(d...)
+		tf.Checkbox = &CheckboxModel{
+			QuestionText: types.StringValue(cb.QuestionText),
+			Options:      opts,
+			Required:     types.BoolValue(cb.Required),
+		}
+		if cb.Grading != nil {
+			tf.Checkbox.Grading = convertGradingToTF(cb.Grading)
+		}
+	}
+
+	if item.Date != nil {
+		tf.Date = &DateModel{
+			QuestionText: types.StringValue(item.Date.QuestionText),
+			Required:     types.BoolValue(item.Date.Required),
+			IncludeYear:  types.BoolValue(item.Date.IncludeYear),
+		}
+	}
+
+	if item.DateTime != nil {
+		tf.DateTime = &DateTimeModel{
+			QuestionText: types.StringValue(item.DateTime.QuestionText),
+			Required:     types.BoolValue(item.DateTime.Required),
+			IncludeYear:  types.BoolValue(item.DateTime.IncludeYear),
+		}
+	}
+
+	if item.Scale != nil {
+		s := item.Scale
+		tf.Scale = &ScaleModel{
+			QuestionText: types.StringValue(s.QuestionText),
+			Required:     types.BoolValue(s.Required),
+			Low:          types.Int64Value(s.Low),
+			High:         types.Int64Value(s.High),
+		}
+		if s.LowLabel != "" {
+			tf.Scale.LowLabel = types.StringValue(s.LowLabel)
+		} else {
+			tf.Scale.LowLabel = types.StringNull()
+		}
+		if s.HighLabel != "" {
+			tf.Scale.HighLabel = types.StringValue(s.HighLabel)
+		} else {
+			tf.Scale.HighLabel = types.StringNull()
+		}
+	}
+
+	if item.SectionHeader != nil {
+		sh := item.SectionHeader
+		tf.SectionHeader = &SectionHeaderModel{
+			Title: types.StringValue(sh.Title),
+		}
+		if sh.Description != "" {
+			tf.SectionHeader.Description = types.StringValue(sh.Description)
+		} else {
+			tf.SectionHeader.Description = types.StringNull()
+		}
+	}
+
 	return tf
 }
 
@@ -267,6 +417,52 @@ func itemObjectType() types.ObjectType {
 					"question_text": types.StringType,
 					"required":      types.BoolType,
 					"grading":       gradingObjectType(),
+				},
+			},
+			"dropdown": types.ObjectType{
+				AttrTypes: map[string]attr.Type{
+					"question_text": types.StringType,
+					"options":       types.ListType{ElemType: types.StringType},
+					"required":      types.BoolType,
+					"grading":       gradingObjectType(),
+				},
+			},
+			"checkbox": types.ObjectType{
+				AttrTypes: map[string]attr.Type{
+					"question_text": types.StringType,
+					"options":       types.ListType{ElemType: types.StringType},
+					"required":      types.BoolType,
+					"grading":       gradingObjectType(),
+				},
+			},
+			"date": types.ObjectType{
+				AttrTypes: map[string]attr.Type{
+					"question_text": types.StringType,
+					"required":      types.BoolType,
+					"include_year":  types.BoolType,
+				},
+			},
+			"date_time": types.ObjectType{
+				AttrTypes: map[string]attr.Type{
+					"question_text": types.StringType,
+					"required":      types.BoolType,
+					"include_year":  types.BoolType,
+				},
+			},
+			"scale": types.ObjectType{
+				AttrTypes: map[string]attr.Type{
+					"question_text": types.StringType,
+					"required":      types.BoolType,
+					"low":           types.Int64Type,
+					"high":          types.Int64Type,
+					"low_label":     types.StringType,
+					"high_label":    types.StringType,
+				},
+			},
+			"section_header": types.ObjectType{
+				AttrTypes: map[string]attr.Type{
+					"title":       types.StringType,
+					"description": types.StringType,
 				},
 			},
 		},

@@ -27,6 +27,12 @@ type ItemModel struct {
 	MultipleChoice *MultipleChoiceModel `tfsdk:"multiple_choice"`
 	ShortAnswer    *ShortAnswerModel    `tfsdk:"short_answer"`
 	Paragraph      *ParagraphModel      `tfsdk:"paragraph"`
+	Dropdown       *DropdownModel       `tfsdk:"dropdown"`
+	Checkbox       *CheckboxModel       `tfsdk:"checkbox"`
+	Date           *DateModel           `tfsdk:"date"`
+	DateTime       *DateTimeModel       `tfsdk:"date_time"`
+	Scale          *ScaleModel          `tfsdk:"scale"`
+	SectionHeader  *SectionHeaderModel  `tfsdk:"section_header"`
 	GoogleItemID   types.String         `tfsdk:"google_item_id"`
 }
 
@@ -50,6 +56,52 @@ type ParagraphModel struct {
 	QuestionText types.String  `tfsdk:"question_text"`
 	Required     types.Bool    `tfsdk:"required"`
 	Grading      *GradingModel `tfsdk:"grading"`
+}
+
+// DropdownModel describes a dropdown (select) question.
+type DropdownModel struct {
+	QuestionText types.String  `tfsdk:"question_text"`
+	Options      types.List    `tfsdk:"options"`
+	Required     types.Bool    `tfsdk:"required"`
+	Grading      *GradingModel `tfsdk:"grading"`
+}
+
+// CheckboxModel describes a checkbox (multi-select) question.
+type CheckboxModel struct {
+	QuestionText types.String  `tfsdk:"question_text"`
+	Options      types.List    `tfsdk:"options"`
+	Required     types.Bool    `tfsdk:"required"`
+	Grading      *GradingModel `tfsdk:"grading"`
+}
+
+// DateModel describes a date question (no time component).
+type DateModel struct {
+	QuestionText types.String `tfsdk:"question_text"`
+	Required     types.Bool   `tfsdk:"required"`
+	IncludeYear  types.Bool   `tfsdk:"include_year"`
+}
+
+// DateTimeModel describes a date+time question.
+type DateTimeModel struct {
+	QuestionText types.String `tfsdk:"question_text"`
+	Required     types.Bool   `tfsdk:"required"`
+	IncludeYear  types.Bool   `tfsdk:"include_year"`
+}
+
+// ScaleModel describes a linear scale question.
+type ScaleModel struct {
+	QuestionText types.String `tfsdk:"question_text"`
+	Required     types.Bool   `tfsdk:"required"`
+	Low          types.Int64  `tfsdk:"low"`
+	High         types.Int64  `tfsdk:"high"`
+	LowLabel     types.String `tfsdk:"low_label"`
+	HighLabel    types.String `tfsdk:"high_label"`
+}
+
+// SectionHeaderModel describes a section header / page break.
+type SectionHeaderModel struct {
+	Title       types.String `tfsdk:"title"`
+	Description types.String `tfsdk:"description"`
 }
 
 // GradingModel describes quiz grading options for a question.

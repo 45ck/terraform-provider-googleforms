@@ -24,6 +24,18 @@ func ItemModelToCreateRequest(item ItemModel, index int) (*forms.Request, error)
 		buildShortAnswer(formItem, item.ShortAnswer)
 	case item.Paragraph != nil:
 		buildParagraph(formItem, item.Paragraph)
+	case item.Dropdown != nil:
+		buildDropdown(formItem, item.Dropdown)
+	case item.Checkbox != nil:
+		buildCheckbox(formItem, item.Checkbox)
+	case item.Date != nil:
+		buildDate(formItem, item.Date)
+	case item.DateTime != nil:
+		buildDateTime(formItem, item.DateTime)
+	case item.Scale != nil:
+		buildScale(formItem, item.Scale)
+	case item.SectionHeader != nil:
+		buildSectionHeader(formItem, item.SectionHeader)
 	default:
 		return nil, fmt.Errorf("item %q has no question block set", item.Title)
 	}
@@ -72,6 +84,89 @@ func buildParagraph(fi *forms.Item, p *ParagraphBlock) {
 	}
 	applyGrading(q, p.Grading)
 	fi.QuestionItem = &forms.QuestionItem{Question: q}
+}
+
+// buildDropdown populates a forms.Item with a ChoiceQuestion (DROP_DOWN).
+func buildDropdown(fi *forms.Item, dd *DropdownBlock) {
+	opts := make([]*forms.Option, len(dd.Options))
+	for i, v := range dd.Options {
+		opts[i] = &forms.Option{Value: v}
+	}
+
+	q := &forms.Question{
+		Required: dd.Required,
+		ChoiceQuestion: &forms.ChoiceQuestion{
+			Type:    "DROP_DOWN",
+			Options: opts,
+		},
+	}
+	applyGrading(q, dd.Grading)
+	fi.QuestionItem = &forms.QuestionItem{Question: q}
+}
+
+// buildCheckbox populates a forms.Item with a ChoiceQuestion (CHECKBOX).
+func buildCheckbox(fi *forms.Item, cb *CheckboxBlock) {
+	opts := make([]*forms.Option, len(cb.Options))
+	for i, v := range cb.Options {
+		opts[i] = &forms.Option{Value: v}
+	}
+
+	q := &forms.Question{
+		Required: cb.Required,
+		ChoiceQuestion: &forms.ChoiceQuestion{
+			Type:    "CHECKBOX",
+			Options: opts,
+		},
+	}
+	applyGrading(q, cb.Grading)
+	fi.QuestionItem = &forms.QuestionItem{Question: q}
+}
+
+// buildDate populates a forms.Item with a DateQuestion (no time).
+func buildDate(fi *forms.Item, d *DateBlock) {
+	q := &forms.Question{
+		Required: d.Required,
+		DateQuestion: &forms.DateQuestion{
+			IncludeTime: false,
+			IncludeYear: d.IncludeYear,
+		},
+	}
+	fi.QuestionItem = &forms.QuestionItem{Question: q}
+}
+
+// buildDateTime populates a forms.Item with a DateQuestion (with time).
+func buildDateTime(fi *forms.Item, dt *DateTimeBlock) {
+	q := &forms.Question{
+		Required: dt.Required,
+		DateQuestion: &forms.DateQuestion{
+			IncludeTime: true,
+			IncludeYear: dt.IncludeYear,
+		},
+	}
+	fi.QuestionItem = &forms.QuestionItem{Question: q}
+}
+
+// buildScale populates a forms.Item with a ScaleQuestion.
+func buildScale(fi *forms.Item, s *ScaleBlock) {
+	q := &forms.Question{
+		Required: s.Required,
+		ScaleQuestion: &forms.ScaleQuestion{
+			Low:      s.Low,
+			High:     s.High,
+			LowLabel: s.LowLabel,
+			HighLabel: s.HighLabel,
+		},
+	}
+	fi.QuestionItem = &forms.QuestionItem{Question: q}
+}
+
+// buildSectionHeader populates a forms.Item as a section header.
+// Section headers have Title and Description but no QuestionItem.
+func buildSectionHeader(fi *forms.Item, sh *SectionHeaderBlock) {
+	fi.Title = sh.Title
+	fi.Description = sh.Description
+	// No QuestionItem — this creates a page break / section header.
+	fi.PageBreakItem = &forms.PageBreakItem{}
 }
 
 // applyGrading sets grading fields on a Question if grading is configured.

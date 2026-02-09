@@ -56,26 +56,46 @@ func resolveItemKey(googleID string, index int, keyMap map[string]string) string
 }
 
 // FormItemToItemModel converts a single Forms API Item into a convert.ItemModel.
-// Returns nil (without error) for unsupported item types (page breaks, images, etc.).
+// Returns nil (without error) for truly unsupported item types (images, videos).
 func FormItemToItemModel(item *forms.Item, itemKey string) (*ItemModel, error) {
-	if item.QuestionItem == nil || item.QuestionItem.Question == nil {
-		return nil, nil
-	}
-
-	q := item.QuestionItem.Question
 	model := &ItemModel{
 		Title:        item.Title,
 		ItemKey:      itemKey,
 		GoogleItemID: item.ItemId,
 	}
 
+	// Section headers / page breaks have no QuestionItem.
+	if item.PageBreakItem != nil {
+		model.SectionHeader = &SectionHeaderBlock{
+			Title:       item.Title,
+			Description: item.Description,
+		}
+		return model, nil
+	}
+
+	if item.QuestionItem == nil || item.QuestionItem.Question == nil {
+		return nil, nil // truly unsupported (image, video)
+	}
+
+	q := item.QuestionItem.Question
+
 	switch {
 	case q.ChoiceQuestion != nil && q.ChoiceQuestion.Type == "RADIO":
 		model.MultipleChoice = convertChoiceQuestion(item.Title, q)
+	case q.ChoiceQuestion != nil && q.ChoiceQuestion.Type == "DROP_DOWN":
+		model.Dropdown = convertDropdownQuestion(item.Title, q)
+	case q.ChoiceQuestion != nil && q.ChoiceQuestion.Type == "CHECKBOX":
+		model.Checkbox = convertCheckboxQuestion(item.Title, q)
 	case q.TextQuestion != nil && !q.TextQuestion.Paragraph:
 		model.ShortAnswer = convertShortAnswer(item.Title, q)
 	case q.TextQuestion != nil && q.TextQuestion.Paragraph:
 		model.Paragraph = convertParagraph(item.Title, q)
+	case q.DateQuestion != nil && !q.DateQuestion.IncludeTime:
+		model.Date = convertDateQuestion(item.Title, q)
+	case q.DateQuestion != nil && q.DateQuestion.IncludeTime:
+		model.DateTime = convertDateTimeQuestion(item.Title, q)
+	case q.ScaleQuestion != nil:
+		model.Scale = convertScaleQuestion(item.Title, q)
 	default:
 		return nil, nil // unsupported question type
 	}
@@ -116,6 +136,66 @@ func convertParagraph(title string, q *forms.Question) *ParagraphBlock {
 	}
 	p.Grading = convertGrading(q.Grading)
 	return p
+}
+
+// convertDropdownQuestion maps a DROP_DOWN ChoiceQuestion to DropdownBlock.
+func convertDropdownQuestion(title string, q *forms.Question) *DropdownBlock {
+	opts := make([]string, len(q.ChoiceQuestion.Options))
+	for i, o := range q.ChoiceQuestion.Options {
+		opts[i] = o.Value
+	}
+	dd := &DropdownBlock{
+		QuestionText: title,
+		Options:      opts,
+		Required:     q.Required,
+	}
+	dd.Grading = convertGrading(q.Grading)
+	return dd
+}
+
+// convertCheckboxQuestion maps a CHECKBOX ChoiceQuestion to CheckboxBlock.
+func convertCheckboxQuestion(title string, q *forms.Question) *CheckboxBlock {
+	opts := make([]string, len(q.ChoiceQuestion.Options))
+	for i, o := range q.ChoiceQuestion.Options {
+		opts[i] = o.Value
+	}
+	cb := &CheckboxBlock{
+		QuestionText: title,
+		Options:      opts,
+		Required:     q.Required,
+	}
+	cb.Grading = convertGrading(q.Grading)
+	return cb
+}
+
+// convertDateQuestion maps a DateQuestion (no time) to DateBlock.
+func convertDateQuestion(title string, q *forms.Question) *DateBlock {
+	return &DateBlock{
+		QuestionText: title,
+		Required:     q.Required,
+		IncludeYear:  q.DateQuestion.IncludeYear,
+	}
+}
+
+// convertDateTimeQuestion maps a DateQuestion (with time) to DateTimeBlock.
+func convertDateTimeQuestion(title string, q *forms.Question) *DateTimeBlock {
+	return &DateTimeBlock{
+		QuestionText: title,
+		Required:     q.Required,
+		IncludeYear:  q.DateQuestion.IncludeYear,
+	}
+}
+
+// convertScaleQuestion maps a ScaleQuestion to ScaleBlock.
+func convertScaleQuestion(title string, q *forms.Question) *ScaleBlock {
+	return &ScaleBlock{
+		QuestionText: title,
+		Required:     q.Required,
+		Low:          q.ScaleQuestion.Low,
+		High:         q.ScaleQuestion.High,
+		LowLabel:     q.ScaleQuestion.LowLabel,
+		HighLabel:    q.ScaleQuestion.HighLabel,
+	}
 }
 
 // convertGrading maps Forms API Grading to a GradingBlock, or nil if absent.
