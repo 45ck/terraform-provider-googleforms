@@ -839,3 +839,386 @@ func TestDelete_APIError_ReturnsDiagnostic(t *testing.T) {
 		t.Fatal("expected diagnostic with summary containing 'Error Deleting Google Form'")
 	}
 }
+
+// ---------------------------------------------------------------------------
+// Additional Create tests
+// ---------------------------------------------------------------------------
+
+func TestCreate_WithQuizGrading_Success(t *testing.T) {
+	t.Parallel()
+
+	var batchReqs []*forms.Request
+	mockForms := &testutil.MockFormsAPI{
+		CreateFunc: func(_ context.Context, form *forms.Form) (*forms.Form, error) {
+			return &forms.Form{
+				FormId: "quiz-form-001",
+				Info:   form.Info,
+			}, nil
+		},
+		BatchUpdateFunc: func(_ context.Context, _ string, req *forms.BatchUpdateFormRequest) (*forms.BatchUpdateFormResponse, error) {
+			batchReqs = req.Requests
+			return &forms.BatchUpdateFormResponse{}, nil
+		},
+		GetFunc: func(_ context.Context, formID string) (*forms.Form, error) {
+			return &forms.Form{
+				FormId:       formID,
+				Info:         &forms.Info{Title: "Quiz Form", DocumentTitle: "Quiz Form"},
+				ResponderUri: "https://docs.google.com/forms/d/" + formID + "/viewform",
+				Settings: &forms.FormSettings{
+					QuizSettings: &forms.QuizSettings{IsQuiz: true},
+				},
+				Items: []*forms.Item{
+					{
+						ItemId: "gid_quiz_1",
+						Title:  "Capital of France?",
+						QuestionItem: &forms.QuestionItem{
+							Question: &forms.Question{
+								ChoiceQuestion: &forms.ChoiceQuestion{
+									Type: "RADIO",
+									Options: []*forms.Option{
+										{Value: "Paris"},
+										{Value: "London"},
+									},
+								},
+								Grading: &forms.Grading{
+									PointValue: 10,
+									CorrectAnswers: &forms.CorrectAnswers{
+										Answers: []*forms.CorrectAnswer{{Value: "Paris"}},
+									},
+								},
+							},
+						},
+					},
+				},
+			}, nil
+		},
+	}
+	mockDrive := &testutil.MockDriveAPI{}
+
+	r := testResource(mockForms, mockDrive)
+	ctx := context.Background()
+
+	grading := &map[string]tftypes.Value{
+		"points":             tftypes.NewValue(tftypes.Number, 10),
+		"correct_answer":     tftypes.NewValue(tftypes.String, "Paris"),
+		"feedback_correct":   tftypes.NewValue(tftypes.String, nil),
+		"feedback_incorrect": tftypes.NewValue(tftypes.String, nil),
+	}
+
+	plan := buildPlan(t, map[string]tftypes.Value{
+		"title":               tftypes.NewValue(tftypes.String, "Quiz Form"),
+		"published":           tftypes.NewValue(tftypes.Bool, false),
+		"accepting_responses": tftypes.NewValue(tftypes.Bool, false),
+		"quiz":                tftypes.NewValue(tftypes.Bool, true),
+		"item": itemListVal(
+			mcItem("q1", "Capital of France?", []string{"Paris", "London"}, grading),
+		),
+	})
+
+	resp := &resource.CreateResponse{
+		State: emptyState(t),
+	}
+
+	r.Create(ctx, resource.CreateRequest{Plan: plan}, resp)
+
+	if resp.Diagnostics.HasError() {
+		for _, d := range resp.Diagnostics.Errors() {
+			t.Logf("  diagnostic: %s -- %s", d.Summary(), d.Detail())
+		}
+		t.Fatal("expected no errors during Create with quiz grading")
+	}
+
+	// Verify BatchUpdate includes UpdateSettings for quiz mode.
+	foundQuizSetting := false
+	for _, req := range batchReqs {
+		if req.UpdateSettings != nil &&
+			req.UpdateSettings.Settings != nil &&
+			req.UpdateSettings.Settings.QuizSettings != nil &&
+			req.UpdateSettings.Settings.QuizSettings.IsQuiz {
+			foundQuizSetting = true
+		}
+	}
+	if !foundQuizSetting {
+		t.Fatal("expected BatchUpdate to contain quiz settings request")
+	}
+}
+
+func TestCreate_WithPublishSettings_Success(t *testing.T) {
+	t.Parallel()
+
+	var publishedCalled bool
+	var gotPublished, gotAccepting bool
+
+	mockForms := &testutil.MockFormsAPI{
+		CreateFunc: func(_ context.Context, form *forms.Form) (*forms.Form, error) {
+			return &forms.Form{
+				FormId: "pub-form-002",
+				Info:   form.Info,
+			}, nil
+		},
+		SetPublishSettingsFunc: func(_ context.Context, _ string, isPublished bool, isAccepting bool) error {
+			publishedCalled = true
+			gotPublished = isPublished
+			gotAccepting = isAccepting
+			return nil
+		},
+		GetFunc: func(_ context.Context, formID string) (*forms.Form, error) {
+			return basicFormResponse(formID, "Published Form"), nil
+		},
+	}
+	mockDrive := &testutil.MockDriveAPI{}
+
+	r := testResource(mockForms, mockDrive)
+	ctx := context.Background()
+
+	plan := buildPlan(t, map[string]tftypes.Value{
+		"title":               tftypes.NewValue(tftypes.String, "Published Form"),
+		"published":           tftypes.NewValue(tftypes.Bool, true),
+		"accepting_responses": tftypes.NewValue(tftypes.Bool, true),
+		"quiz":                tftypes.NewValue(tftypes.Bool, false),
+	})
+
+	resp := &resource.CreateResponse{
+		State: emptyState(t),
+	}
+
+	r.Create(ctx, resource.CreateRequest{Plan: plan}, resp)
+
+	if resp.Diagnostics.HasError() {
+		for _, d := range resp.Diagnostics.Errors() {
+			t.Logf("  diagnostic: %s -- %s", d.Summary(), d.Detail())
+		}
+		t.Fatal("expected no errors during Create with publish settings")
+	}
+
+	if !publishedCalled {
+		t.Fatal("expected SetPublishSettings to be called")
+	}
+	if !gotPublished {
+		t.Fatal("expected published=true passed to SetPublishSettings")
+	}
+	if !gotAccepting {
+		t.Fatal("expected accepting=true passed to SetPublishSettings")
+	}
+}
+
+// ---------------------------------------------------------------------------
+// Additional Read tests
+// ---------------------------------------------------------------------------
+
+func TestRead_WithItems_CorrectMapping(t *testing.T) {
+	t.Parallel()
+
+	mockForms := &testutil.MockFormsAPI{
+		GetFunc: func(_ context.Context, formID string) (*forms.Form, error) {
+			return formWithItems(formID, "Items Read Form"), nil
+		},
+	}
+	mockDrive := &testutil.MockDriveAPI{}
+
+	r := testResource(mockForms, mockDrive)
+	ctx := context.Background()
+
+	// State includes items with google_item_id set so key map can be built.
+	iType := itemBlockType()
+	gType := iType.AttributeTypes["short_answer"].(tftypes.Object).AttributeTypes["grading"]
+
+	sa := tftypes.NewValue(iType.AttributeTypes["short_answer"], map[string]tftypes.Value{
+		"question_text": tftypes.NewValue(tftypes.String, "Name?"),
+		"required":      tftypes.NewValue(tftypes.Bool, false),
+		"grading":       tftypes.NewValue(gType, nil),
+	})
+	item1 := tftypes.NewValue(iType, map[string]tftypes.Value{
+		"item_key":        tftypes.NewValue(tftypes.String, "q1"),
+		"google_item_id":  tftypes.NewValue(tftypes.String, "gid_1"),
+		"multiple_choice": tftypes.NewValue(iType.AttributeTypes["multiple_choice"], nil),
+		"short_answer":    sa,
+		"paragraph":       tftypes.NewValue(iType.AttributeTypes["paragraph"], nil),
+	})
+
+	mcType := iType.AttributeTypes["multiple_choice"]
+	mc := tftypes.NewValue(mcType, map[string]tftypes.Value{
+		"question_text": tftypes.NewValue(tftypes.String, "Color?"),
+		"options": tftypes.NewValue(tftypes.List{ElementType: tftypes.String}, []tftypes.Value{
+			tftypes.NewValue(tftypes.String, "Red"),
+			tftypes.NewValue(tftypes.String, "Blue"),
+		}),
+		"required": tftypes.NewValue(tftypes.Bool, false),
+		"grading":  tftypes.NewValue(gType, nil),
+	})
+	item2 := tftypes.NewValue(iType, map[string]tftypes.Value{
+		"item_key":        tftypes.NewValue(tftypes.String, "q2"),
+		"google_item_id":  tftypes.NewValue(tftypes.String, "gid_2"),
+		"multiple_choice": mc,
+		"short_answer":    tftypes.NewValue(iType.AttributeTypes["short_answer"], nil),
+		"paragraph":       tftypes.NewValue(iType.AttributeTypes["paragraph"], nil),
+	})
+
+	itemList := tftypes.NewValue(tftypes.List{ElementType: iType}, []tftypes.Value{item1, item2})
+
+	state := buildState(t, map[string]tftypes.Value{
+		"id":                  tftypes.NewValue(tftypes.String, "items-read-id"),
+		"title":               tftypes.NewValue(tftypes.String, "Items Read Form"),
+		"published":           tftypes.NewValue(tftypes.Bool, false),
+		"accepting_responses": tftypes.NewValue(tftypes.Bool, false),
+		"quiz":                tftypes.NewValue(tftypes.Bool, false),
+		"item":                itemList,
+	})
+
+	resp := &resource.ReadResponse{
+		State: state,
+	}
+
+	r.Read(ctx, resource.ReadRequest{State: state}, resp)
+
+	if resp.Diagnostics.HasError() {
+		for _, d := range resp.Diagnostics.Errors() {
+			t.Logf("  diagnostic: %s -- %s", d.Summary(), d.Detail())
+		}
+		t.Fatal("expected no errors during Read with items")
+	}
+
+	// Verify the state still has the correct form ID.
+	gotID := stateFormID(t, resp.State)
+	if gotID != "items-read-id" {
+		t.Fatalf("expected form_id %q, got %q", "items-read-id", gotID)
+	}
+
+	// Verify items were mapped into state by reading the full model.
+	var model FormResourceModel
+	diags := resp.State.Get(ctx, &model)
+	if diags.HasError() {
+		t.Fatalf("failed to read state model: %v", diags.Errors())
+	}
+	if model.Items.IsNull() || model.Items.IsUnknown() {
+		t.Fatal("expected items to be populated in state after Read")
+	}
+	if len(model.Items.Elements()) != 2 {
+		t.Fatalf("expected 2 items in state, got %d", len(model.Items.Elements()))
+	}
+}
+
+// ---------------------------------------------------------------------------
+// Additional Update tests
+// ---------------------------------------------------------------------------
+
+func TestUpdate_PublishSettingsChanged_Success(t *testing.T) {
+	t.Parallel()
+
+	var publishCalled bool
+	var gotPublished, gotAccepting bool
+
+	mockForms := &testutil.MockFormsAPI{
+		GetFunc: func(_ context.Context, formID string) (*forms.Form, error) {
+			return basicFormResponse(formID, "Pub Update Form"), nil
+		},
+		BatchUpdateFunc: func(_ context.Context, _ string, _ *forms.BatchUpdateFormRequest) (*forms.BatchUpdateFormResponse, error) {
+			return &forms.BatchUpdateFormResponse{}, nil
+		},
+		SetPublishSettingsFunc: func(_ context.Context, _ string, isPublished bool, isAccepting bool) error {
+			publishCalled = true
+			gotPublished = isPublished
+			gotAccepting = isAccepting
+			return nil
+		},
+	}
+	mockDrive := &testutil.MockDriveAPI{}
+
+	r := testResource(mockForms, mockDrive)
+	ctx := context.Background()
+
+	// State: unpublished.
+	state := buildState(t, map[string]tftypes.Value{
+		"id":                  tftypes.NewValue(tftypes.String, "pub-update-id"),
+		"title":               tftypes.NewValue(tftypes.String, "Pub Update Form"),
+		"published":           tftypes.NewValue(tftypes.Bool, false),
+		"accepting_responses": tftypes.NewValue(tftypes.Bool, false),
+		"quiz":                tftypes.NewValue(tftypes.Bool, false),
+	})
+
+	// Plan: now published and accepting.
+	plan := buildPlan(t, map[string]tftypes.Value{
+		"id":                  tftypes.NewValue(tftypes.String, "pub-update-id"),
+		"title":               tftypes.NewValue(tftypes.String, "Pub Update Form"),
+		"published":           tftypes.NewValue(tftypes.Bool, true),
+		"accepting_responses": tftypes.NewValue(tftypes.Bool, true),
+		"quiz":                tftypes.NewValue(tftypes.Bool, false),
+	})
+
+	resp := &resource.UpdateResponse{
+		State: state,
+	}
+
+	r.Update(ctx, resource.UpdateRequest{Plan: plan, State: state}, resp)
+
+	if resp.Diagnostics.HasError() {
+		for _, d := range resp.Diagnostics.Errors() {
+			t.Logf("  diagnostic: %s -- %s", d.Summary(), d.Detail())
+		}
+		t.Fatal("expected no errors during Update with publish settings change")
+	}
+
+	if !publishCalled {
+		t.Fatal("expected SetPublishSettings to be called on update")
+	}
+	if !gotPublished {
+		t.Fatal("expected published=true passed to SetPublishSettings")
+	}
+	if !gotAccepting {
+		t.Fatal("expected accepting=true passed to SetPublishSettings")
+	}
+}
+
+func TestUpdate_APIError_ReturnsDiagnostic(t *testing.T) {
+	t.Parallel()
+
+	mockForms := &testutil.MockFormsAPI{
+		GetFunc: func(_ context.Context, _ string) (*forms.Form, error) {
+			return nil, &client.APIError{
+				StatusCode: 500,
+				Message:    "server error during update read",
+			}
+		},
+	}
+	mockDrive := &testutil.MockDriveAPI{}
+
+	r := testResource(mockForms, mockDrive)
+	ctx := context.Background()
+
+	state := buildState(t, map[string]tftypes.Value{
+		"id":                  tftypes.NewValue(tftypes.String, "update-err-id"),
+		"title":               tftypes.NewValue(tftypes.String, "Update Err Form"),
+		"published":           tftypes.NewValue(tftypes.Bool, false),
+		"accepting_responses": tftypes.NewValue(tftypes.Bool, false),
+		"quiz":                tftypes.NewValue(tftypes.Bool, false),
+	})
+
+	plan := buildPlan(t, map[string]tftypes.Value{
+		"id":                  tftypes.NewValue(tftypes.String, "update-err-id"),
+		"title":               tftypes.NewValue(tftypes.String, "Updated Title"),
+		"published":           tftypes.NewValue(tftypes.Bool, false),
+		"accepting_responses": tftypes.NewValue(tftypes.Bool, false),
+		"quiz":                tftypes.NewValue(tftypes.Bool, false),
+	})
+
+	resp := &resource.UpdateResponse{
+		State: state,
+	}
+
+	r.Update(ctx, resource.UpdateRequest{Plan: plan, State: state}, resp)
+
+	if !resp.Diagnostics.HasError() {
+		t.Fatal("expected error diagnostic when Update pre-read fails")
+	}
+
+	found := false
+	for _, d := range resp.Diagnostics.Errors() {
+		if strContains(d.Summary(), "Error Reading Google Form Before Update") {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Fatal("expected diagnostic with summary containing 'Error Reading Google Form Before Update'")
+	}
+}
