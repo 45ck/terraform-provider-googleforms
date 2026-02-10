@@ -3,8 +3,8 @@
 **Inspector:** Designer (Architectural Spec Verification)
 **Date:** 2026-02-09
 **Scope:** All production source files under `internal/`
-**Reference Spec:** `C:\Projects\terraform-google-forms-spec.md`
-**Reference Plan:** `C:\Users\MQCKENC\.claude\plans\snappy-munching-charm.md`
+**Reference Spec:** Not included in this repository (internal planning document).
+**Reference Plan:** Not included in this repository (internal planning document).
 
 ---
 
