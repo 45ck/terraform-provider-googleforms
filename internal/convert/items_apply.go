@@ -48,7 +48,11 @@ func ApplyItemModelToExistingItem(existing *forms.Item, desired ItemModel) (bool
 			opts[i] = &forms.Option{Value: v}
 		}
 		q.ChoiceQuestion.Options = opts
-		applyGrading(q, desired.MultipleChoice.Grading)
+		if desired.MultipleChoice.Grading == nil {
+			q.Grading = nil
+		} else {
+			applyGrading(q, desired.MultipleChoice.Grading)
+		}
 
 		existing.PageBreakItem = nil
 		existing.TextItem = nil
@@ -79,7 +83,11 @@ func ApplyItemModelToExistingItem(existing *forms.Item, desired ItemModel) (bool
 			opts[i] = &forms.Option{Value: v}
 		}
 		q.ChoiceQuestion.Options = opts
-		applyGrading(q, desired.Dropdown.Grading)
+		if desired.Dropdown.Grading == nil {
+			q.Grading = nil
+		} else {
+			applyGrading(q, desired.Dropdown.Grading)
+		}
 
 		existing.PageBreakItem = nil
 		existing.TextItem = nil
@@ -110,7 +118,11 @@ func ApplyItemModelToExistingItem(existing *forms.Item, desired ItemModel) (bool
 			opts[i] = &forms.Option{Value: v}
 		}
 		q.ChoiceQuestion.Options = opts
-		applyGrading(q, desired.Checkbox.Grading)
+		if desired.Checkbox.Grading == nil {
+			q.Grading = nil
+		} else {
+			applyGrading(q, desired.Checkbox.Grading)
+		}
 
 		existing.PageBreakItem = nil
 		existing.TextItem = nil
@@ -137,7 +149,11 @@ func ApplyItemModelToExistingItem(existing *forms.Item, desired ItemModel) (bool
 		q.RowQuestion = nil
 
 		q.TextQuestion.Paragraph = false
-		applyGrading(q, desired.ShortAnswer.Grading)
+		if desired.ShortAnswer.Grading == nil {
+			q.Grading = nil
+		} else {
+			applyGrading(q, desired.ShortAnswer.Grading)
+		}
 
 		existing.PageBreakItem = nil
 		existing.TextItem = nil
@@ -164,7 +180,11 @@ func ApplyItemModelToExistingItem(existing *forms.Item, desired ItemModel) (bool
 		q.RowQuestion = nil
 
 		q.TextQuestion.Paragraph = true
-		applyGrading(q, desired.Paragraph.Grading)
+		if desired.Paragraph.Grading == nil {
+			q.Grading = nil
+		} else {
+			applyGrading(q, desired.Paragraph.Grading)
+		}
 
 		existing.PageBreakItem = nil
 		existing.TextItem = nil

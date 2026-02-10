@@ -70,7 +70,7 @@ func formAttributes() map[string]schema.Attribute {
 			Optional:    true,
 			Computed:    true,
 			Default:     stringdefault.StaticString("replace_all"),
-			Description: "Update strategy for form items. 'replace_all' deletes and recreates all items on changes. 'targeted' updates existing items in-place when possible (no structural changes).",
+			Description: "Update strategy for form items. 'replace_all' deletes and recreates all items on changes. 'targeted' applies deletes/moves/updates/creates using batchUpdate when item_keys are already correlated to google_item_id in state; it refuses question type changes and does not support content_json.",
 			Validators: []validator.String{
 				stringvalidator.OneOf("replace_all", "targeted"),
 			},

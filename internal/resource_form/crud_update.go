@@ -6,6 +6,7 @@ package resourceform
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -55,12 +56,15 @@ func (r *FormResource) Update(
 
 	// Step 2: Build and execute batch update requests.
 	// Always update title/description. Items are updated based on update_strategy.
+	var keyMap map[string]string
 	switch updateStrategy {
 	case "targeted":
-		resp.Diagnostics.Append(r.updateTargeted(ctx, plan, state, currentForm)...)
+		km, d := r.updateTargeted(ctx, plan, state, currentForm)
+		resp.Diagnostics.Append(d...)
 		if resp.Diagnostics.HasError() {
 			return
 		}
+		keyMap = km
 	case "replace_all":
 		if !dangerReplaceAll {
 			resp.Diagnostics.AddWarning(
@@ -69,10 +73,12 @@ func (r *FormResource) Update(
 			)
 		}
 
-		resp.Diagnostics.Append(r.updateReplaceAll(ctx, plan, state, currentForm)...)
+		km, d := r.updateReplaceAll(ctx, plan, state, currentForm)
+		resp.Diagnostics.Append(d...)
 		if resp.Diagnostics.HasError() {
 			return
 		}
+		keyMap = km
 	default:
 		resp.Diagnostics.AddError("Invalid update_strategy", fmt.Sprintf("Unsupported update_strategy %q", updateStrategy))
 		return
@@ -110,11 +116,11 @@ func (r *FormResource) Update(
 		return
 	}
 
-	// Step 7: Build key map for item correlation from prior state to keep item_key stable.
-	keyMap, diags := buildItemKeyMap(ctx, state.Items)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
+	// Step 7: Ensure keyMap is set for item correlation.
+	// For targeted updates, it should include state mappings and any newly created items.
+	// For replace_all, it should map newly created item IDs back to their plan item_keys.
+	if keyMap == nil {
+		keyMap = map[string]string{}
 	}
 
 	formModel, err := convert.FormToModel(finalForm, keyMap)
@@ -148,8 +154,9 @@ func (r *FormResource) updateReplaceAll(
 	plan FormResourceModel,
 	state FormResourceModel,
 	currentForm *forms.Form,
-) diag.Diagnostics {
+) (map[string]string, diag.Diagnostics) {
 	var diags diag.Diagnostics
+	createdKeyMap := map[string]string{}
 
 	// Order: (1) UpdateFormInfo, (2) delete items, (3) quiz settings, (4) create items.
 	// Item deletes MUST precede quiz settings changes so that disabling quiz
@@ -163,6 +170,7 @@ func (r *FormResource) updateReplaceAll(
 
 	existingItemCount := len(currentForm.Items)
 	var createItemRequests []*forms.Request
+	var createKeys []string
 
 	if !plan.ContentJSON.IsNull() && !plan.ContentJSON.IsUnknown() && plan.ContentJSON.ValueString() != "" {
 		tflog.Debug(ctx, "updating items via content_json mode")
@@ -174,14 +182,14 @@ func (r *FormResource) updateReplaceAll(
 		jsonRequests, err := convert.DeclarativeJSONToRequests(plan.ContentJSON.ValueString())
 		if err != nil {
 			diags.AddError("Error Parsing content_json", fmt.Sprintf("Could not parse content_json: %s", err))
-			return diags
+			return nil, diags
 		}
 		createItemRequests = jsonRequests
 	} else {
 		convertItems, d := tfItemsToConvertItems(ctx, plan.Items)
 		diags.Append(d...)
 		if diags.HasError() {
-			return diags
+			return nil, diags
 		}
 
 		if len(convertItems) > 0 || existingItemCount > 0 {
@@ -195,10 +203,21 @@ func (r *FormResource) updateReplaceAll(
 			}
 
 			if len(convertItems) > 0 {
+				// Collect item_keys in plan order so we can correlate CreateItem replies.
+				var planItems []ItemModel
+				diags.Append(plan.Items.ElementsAs(ctx, &planItems, false)...)
+				if diags.HasError() {
+					return nil, diags
+				}
+				createKeys = make([]string, len(planItems))
+				for i := range planItems {
+					createKeys[i] = planItems[i].ItemKey.ValueString()
+				}
+
 				itemRequests, err := convert.ItemsToCreateRequests(convertItems)
 				if err != nil {
 					diags.AddError("Error Building Item Requests", fmt.Sprintf("Could not build item create requests: %s", err))
-					return diags
+					return nil, diags
 				}
 				createItemRequests = itemRequests
 			}
@@ -217,7 +236,7 @@ func (r *FormResource) updateReplaceAll(
 	requests = append(requests, createItemRequests...)
 
 	if len(requests) == 0 {
-		return diags
+		return createdKeyMap, diags
 	}
 
 	tflog.Debug(ctx, "executing batchUpdate (replace_all)", map[string]interface{}{
@@ -229,13 +248,26 @@ func (r *FormResource) updateReplaceAll(
 		IncludeFormInResponse: true,
 	}
 
-	_, err := r.client.Forms.BatchUpdate(ctx, state.ID.ValueString(), batchReq)
+	apiResp, err := r.client.Forms.BatchUpdate(ctx, state.ID.ValueString(), batchReq)
 	if err != nil {
 		diags.AddError("Error Updating Google Form", fmt.Sprintf("BatchUpdate failed for form %s: %s", state.ID.ValueString(), err))
-		return diags
+		return nil, diags
 	}
 
-	return diags
+	// Build itemId -> item_key mapping for all created items (HCL item blocks only).
+	if len(createKeys) > 0 && apiResp != nil {
+		createReqIndexToKey, derr := buildCreateReqIndexToKey(requests, createKeys)
+		if derr != nil {
+			diags.AddWarning("Item Key Correlation Failed", derr.Error())
+		} else {
+			createdKeyMap, derr = extractCreateItemKeyMap(apiResp, requests, createReqIndexToKey)
+			if derr != nil {
+				diags.AddWarning("Item Key Correlation Failed", derr.Error())
+			}
+		}
+	}
+
+	return createdKeyMap, diags
 }
 
 func (r *FormResource) updateTargeted(
@@ -243,15 +275,22 @@ func (r *FormResource) updateTargeted(
 	plan FormResourceModel,
 	state FormResourceModel,
 	currentForm *forms.Form,
-) diag.Diagnostics {
+) (map[string]string, diag.Diagnostics) {
 	var diags diag.Diagnostics
+	keyMap, d := buildItemKeyMap(ctx, state.Items)
+	diags.Append(d...)
+	if diags.HasError() {
+		return nil, diags
+	}
+
+	createdKeyMap := map[string]string{}
 
 	if !plan.ContentJSON.IsNull() && !plan.ContentJSON.IsUnknown() && plan.ContentJSON.ValueString() != "" {
 		diags.AddError("Targeted Updates Not Supported With content_json", "content_json mode cannot be updated in-place. Set update_strategy = \"replace_all\" or switch to item blocks.")
-		return diags
+		return nil, diags
 	}
 
-	// Decode plan/state items to enforce "no structural changes" for targeted mode.
+	// Decode plan/state items to correlate item_keys and detect adds/removes/reorders.
 	var planItems []ItemModel
 	var stateItems []ItemModel
 
@@ -262,51 +301,26 @@ func (r *FormResource) updateTargeted(
 		diags.Append(state.Items.ElementsAs(ctx, &stateItems, false)...)
 	}
 	if diags.HasError() {
-		return diags
-	}
-
-	if len(planItems) != len(stateItems) {
-		diags.AddError(
-			"Targeted Update Requires Stable Item Structure",
-			"Targeted updates require the same number of items. Add/remove/reorder items using update_strategy = \"replace_all\".",
-		)
-		return diags
-	}
-
-	// Ensure the item_key ordering is unchanged, and that we have google_item_id for every item.
-	for i := range planItems {
-		if planItems[i].ItemKey.ValueString() != stateItems[i].ItemKey.ValueString() {
-			diags.AddError(
-				"Targeted Update Requires Stable Item Order",
-				"Targeted updates require the same item_key ordering. Reordering items requires update_strategy = \"replace_all\".",
-			)
-			return diags
-		}
-
-		if stateItems[i].GoogleItemID.IsNull() || stateItems[i].GoogleItemID.IsUnknown() || stateItems[i].GoogleItemID.ValueString() == "" {
-			diags.AddError(
-				"Missing google_item_id",
-				"Targeted updates require google_item_id to be known for all items. Re-import the form or switch to update_strategy = \"replace_all\".",
-			)
-			return diags
-		}
+		return nil, diags
 	}
 
 	desiredItems, d := tfItemsToConvertItems(ctx, plan.Items)
 	diags.Append(d...)
 	if diags.HasError() {
-		return diags
+		return nil, diags
 	}
 
 	// Index current items by itemId to find existing items quickly.
 	type itemRef struct {
-		index int64
+		index int
 		item  *forms.Item
 	}
 	byID := make(map[string]itemRef, len(currentForm.Items))
+	currentOrder := make([]string, 0, len(currentForm.Items))
 	for i, it := range currentForm.Items {
 		if it != nil && it.ItemId != "" {
-			byID[it.ItemId] = itemRef{index: int64(i), item: it}
+			byID[it.ItemId] = itemRef{index: i, item: it}
+			currentOrder = append(currentOrder, it.ItemId)
 		}
 	}
 
@@ -318,46 +332,175 @@ func (r *FormResource) updateTargeted(
 
 	planQuiz := plan.Quiz.ValueBool()
 	stateQuiz := state.Quiz.ValueBool()
-	if planQuiz != stateQuiz {
-		requests = append(requests, convert.BuildQuizSettingsRequest(planQuiz))
+	if planQuiz && !stateQuiz {
+		// Enabling quiz: must set quiz before applying grading.
+		requests = append(requests, convert.BuildQuizSettingsRequest(true))
 	}
 
-	for i := range desiredItems {
-		itemID := stateItems[i].GoogleItemID.ValueString()
-		ref, ok := byID[itemID]
-		if !ok || ref.item == nil {
+	// Build state item_key -> google_item_id map for existing items.
+	stateKeyToID := make(map[string]string, len(stateItems))
+	for _, it := range stateItems {
+		key := it.ItemKey.ValueString()
+		gid := it.GoogleItemID.ValueString()
+		if key != "" && gid != "" {
+			stateKeyToID[key] = gid
+		}
+	}
+
+	planKeySeen := make(map[string]bool, len(planItems))
+	planExistingIDs := make([]string, 0, len(planItems))
+	planNewIndices := make([]int, 0)
+	for i, it := range planItems {
+		key := it.ItemKey.ValueString()
+		planKeySeen[key] = true
+		if gid, ok := stateKeyToID[key]; ok {
+			planExistingIDs = append(planExistingIDs, gid)
+		} else {
+			planNewIndices = append(planNewIndices, i)
+		}
+	}
+
+	// Validate that all items in the current form are tracked by state (required for safe moves/deletes).
+	for _, id := range currentOrder {
+		if _, ok := keyMap[id]; !ok {
+			diags.AddError(
+				"Targeted Update Requires Full Item State",
+				"One or more existing items are not present in Terraform state (missing google_item_id mapping). Import the form or switch to update_strategy = \"replace_all\".",
+			)
+			return nil, diags
+		}
+	}
+
+	// Step A: delete items that exist in state but are removed from plan.
+	deleteIndices := make([]int, 0)
+	for _, st := range stateItems {
+		key := st.ItemKey.ValueString()
+		if key == "" {
+			continue
+		}
+		if !planKeySeen[key] {
+			gid := st.GoogleItemID.ValueString()
+			ref, ok := byID[gid]
+			if !ok {
+				continue
+			}
+			deleteIndices = append(deleteIndices, ref.index)
+		}
+	}
+	// delete in reverse index order
+	for i := 0; i < len(deleteIndices); i++ {
+		for j := i + 1; j < len(deleteIndices); j++ {
+			if deleteIndices[i] < deleteIndices[j] {
+				deleteIndices[i], deleteIndices[j] = deleteIndices[j], deleteIndices[i]
+			}
+		}
+	}
+	for _, idx := range deleteIndices {
+		requests = append(requests, &forms.Request{DeleteItem: &forms.DeleteItemRequest{Location: &forms.Location{Index: int64(idx)}}})
+		currentOrder = append(currentOrder[:idx], currentOrder[idx+1:]...)
+	}
+
+	// Step B: reorder existing items (ignoring new items) to match plan order.
+	if len(currentOrder) != len(planExistingIDs) {
+		diags.AddError(
+			"Targeted Update Structural Mismatch",
+			"After applying deletions, the remaining item count does not match the number of existing items in the plan. Switch to update_strategy = \"replace_all\".",
+		)
+		return nil, diags
+	}
+
+	for targetIdx, wantID := range planExistingIDs {
+		curIdx := indexOf(currentOrder, wantID)
+		if curIdx < 0 {
 			diags.AddError(
 				"Targeted Update Failed To Locate Existing Item",
-				fmt.Sprintf("Could not find existing item %q (google_item_id=%s) in the current form. Switch to update_strategy = \"replace_all\".", stateItems[i].ItemKey.ValueString(), itemID),
+				fmt.Sprintf("Could not find existing item ID %s in the current form. Switch to update_strategy = \"replace_all\".", wantID),
 			)
-			return diags
+			return nil, diags
+		}
+		if curIdx != targetIdx {
+			requests = append(requests, &forms.Request{
+				MoveItem: &forms.MoveItemRequest{
+					OriginalLocation: &forms.Location{Index: int64(curIdx)},
+					NewLocation:      &forms.Location{Index: int64(targetIdx)},
+				},
+			})
+			// simulate move
+			id := currentOrder[curIdx]
+			currentOrder = append(currentOrder[:curIdx], currentOrder[curIdx+1:]...)
+			before := currentOrder[:targetIdx]
+			after := currentOrder[targetIdx:]
+			currentOrder = append(append(append([]string{}, before...), id), after...)
+		}
+	}
+
+	// Step C: update existing items in-place.
+	for i, pi := range planItems {
+		key := pi.ItemKey.ValueString()
+		gid, ok := stateKeyToID[key]
+		if !ok {
+			continue
+		}
+		ref, ok := byID[gid]
+		if !ok || ref.item == nil {
+			diags.AddError("Targeted Update Failed", fmt.Sprintf("Could not find API item %s for %q", gid, key))
+			return nil, diags
+		}
+		idx := indexOf(currentOrder, gid)
+		if idx < 0 {
+			diags.AddError("Targeted Update Failed", fmt.Sprintf("Could not find item %s in current order for %q", gid, key))
+			return nil, diags
 		}
 
-		// Apply desired changes to the existing API object to preserve IDs.
 		needsReplace, err := convert.ApplyItemModelToExistingItem(ref.item, desiredItems[i])
 		if err != nil {
 			diags.AddError("Targeted Update Failed", err.Error())
-			return diags
+			return nil, diags
 		}
 		if needsReplace {
 			diags.AddError(
 				"Targeted Update Requires Replace-All",
-				fmt.Sprintf("Item %q requires a structural change (e.g. question type change) and cannot be updated in-place. Switch to update_strategy = \"replace_all\".", stateItems[i].ItemKey.ValueString()),
+				fmt.Sprintf("Item %q requires a structural change (e.g. question type change) and cannot be updated in-place. Switch to update_strategy = \"replace_all\".", key),
 			)
-			return diags
+			return nil, diags
 		}
 
 		requests = append(requests, &forms.Request{
 			UpdateItem: &forms.UpdateItemRequest{
 				Item:       ref.item,
-				Location:   &forms.Location{Index: ref.index},
+				Location:   &forms.Location{Index: int64(idx)},
 				UpdateMask: "*",
 			},
 		})
 	}
 
+	if !planQuiz && stateQuiz {
+		// Disabling quiz: must clear grading first, then disable quiz.
+		requests = append(requests, convert.BuildQuizSettingsRequest(false))
+	}
+
+	// Step D: create new items at their intended indices (in plan order).
+	createReqIndexToKey := make(map[int]string)
+	for i := range planItems {
+		key := planItems[i].ItemKey.ValueString()
+		if _, ok := stateKeyToID[key]; ok {
+			continue
+		}
+		// New item: create at its final index in the full plan sequence.
+		insertIdx := i
+		req, err := convert.ItemModelToCreateRequest(desiredItems[i], insertIdx)
+		if err != nil {
+			diags.AddError("Error Building Item Requests", err.Error())
+			return nil, diags
+		}
+		createReqIndexToKey[len(requests)] = key
+		requests = append(requests, req)
+		// simulate insert so subsequent create indices line up
+		currentOrder = append(currentOrder[:insertIdx], append([]string{"__new__"}, currentOrder[insertIdx:]...)...)
+	}
+
 	if len(requests) == 0 {
-		return diags
+		return keyMap, diags
 	}
 
 	tflog.Debug(ctx, "executing batchUpdate (targeted)", map[string]interface{}{
@@ -369,11 +512,84 @@ func (r *FormResource) updateTargeted(
 		IncludeFormInResponse: true,
 	}
 
-	_, err := r.client.Forms.BatchUpdate(ctx, state.ID.ValueString(), batchReq)
+	apiResp, err := r.client.Forms.BatchUpdate(ctx, state.ID.ValueString(), batchReq)
 	if err != nil {
 		diags.AddError("Error Updating Google Form", fmt.Sprintf("BatchUpdate failed for form %s: %s", state.ID.ValueString(), err))
-		return diags
+		return nil, diags
 	}
 
-	return diags
+	createdKeyMap, derr := extractCreateItemKeyMap(apiResp, requests, createReqIndexToKey)
+	if derr != nil {
+		diags.AddWarning("Item Key Correlation Failed", derr.Error())
+	} else {
+		for gid, k := range createdKeyMap {
+			keyMap[gid] = k
+		}
+	}
+
+	return keyMap, diags
+}
+
+func extractCreateItemKeyMap(
+	resp *forms.BatchUpdateFormResponse,
+	requests []*forms.Request,
+	requestIndexToKey map[int]string,
+) (map[string]string, error) {
+	out := make(map[string]string)
+	if resp == nil {
+		return out, fmt.Errorf("nil BatchUpdateFormResponse")
+	}
+	if len(resp.Replies) != len(requests) {
+		return out, fmt.Errorf("reply count mismatch: got %d replies for %d requests", len(resp.Replies), len(requests))
+	}
+
+	for i := range requests {
+		key, ok := requestIndexToKey[i]
+		if !ok {
+			continue
+		}
+		r := requests[i]
+		if r.CreateItem == nil {
+			continue
+		}
+		rep := resp.Replies[i]
+		if rep == nil || rep.CreateItem == nil {
+			return out, fmt.Errorf("missing createItem reply for request[%d]", i)
+		}
+		itemID := rep.CreateItem.ItemId
+		if strings.TrimSpace(itemID) == "" {
+			return out, fmt.Errorf("empty itemId in createItem reply for request[%d]", i)
+		}
+		out[itemID] = key
+	}
+
+	return out, nil
+}
+
+func buildCreateReqIndexToKey(requests []*forms.Request, createKeys []string) (map[int]string, error) {
+	out := make(map[int]string)
+	next := 0
+	for i := range requests {
+		if requests[i] == nil || requests[i].CreateItem == nil {
+			continue
+		}
+		if next >= len(createKeys) {
+			return nil, fmt.Errorf("more CreateItem requests than keys: want %d, got extra at request[%d]", len(createKeys), i)
+		}
+		out[i] = createKeys[next]
+		next++
+	}
+	if next != len(createKeys) {
+		return nil, fmt.Errorf("key count mismatch: expected %d CreateItem requests, saw %d", len(createKeys), next)
+	}
+	return out, nil
+}
+
+func indexOf(s []string, want string) int {
+	for i := range s {
+		if s[i] == want {
+			return i
+		}
+	}
+	return -1
 }
