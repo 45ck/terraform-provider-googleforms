@@ -53,7 +53,7 @@ security: ## Run security scanners
 
 docs: ## Generate and validate provider documentation
 	@echo "Generating docs with tfplugindocs..."
-	@which tfplugindocs > /dev/null 2>&1 && tfplugindocs generate || echo "tfplugindocs not installed; skipping"
+	@which tfplugindocs > /dev/null 2>&1 && tfplugindocs generate --provider-name googleforms || echo "tfplugindocs not installed; skipping"
 
 file-limits: ## Check file size and shape limits
 	@go run ./tools/quality/check_file_limits.go
