@@ -9,7 +9,8 @@ terraform {
 
 provider "googleforms" {}
 
-data "google_forms_spreadsheet" "example" {
+data "googleforms_spreadsheet" "example" {
   id = "spreadsheet-id"
 }
+
 

@@ -288,10 +288,13 @@ func TestRetry_BackoffIncreases(t *testing.T) {
 	cfg.MaxBackoff = 5 * time.Second
 	cfg.MaxRetries = 4
 
-	_ = WithRetry(context.Background(), cfg, func() error {
+	err := WithRetry(context.Background(), cfg, func() error {
 		timestamps = append(timestamps, time.Now())
 		return &APIError{StatusCode: 500, Message: "error"}
 	})
+	if err == nil {
+		t.Fatal("expected error after retries, got nil")
+	}
 
 	if len(timestamps) < 4 {
 		t.Fatalf("expected at least 4 timestamps, got %d", len(timestamps))

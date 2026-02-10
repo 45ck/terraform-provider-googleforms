@@ -47,7 +47,7 @@ provider "googleforms" {}
 ### Example: Simple Survey
 
 ```hcl
-resource "google_forms_form" "survey" {
+resource "googleforms_form" "survey" {
   title               = "Employee Satisfaction Survey"
   description         = "Managed by Terraform."
   published           = true
@@ -79,14 +79,14 @@ resource "google_forms_form" "survey" {
 }
 
 output "form_url" {
-  value = google_forms_form.survey.responder_uri
+  value = googleforms_form.survey.responder_uri
 }
 ```
 
 ### Example: Quiz with Grading
 
 ```hcl
-resource "google_forms_form" "quiz" {
+resource "googleforms_form" "quiz" {
   title               = "Geography Quiz"
   quiz                = true
   published           = true
@@ -112,7 +112,7 @@ resource "google_forms_form" "quiz" {
 For question types not yet natively supported:
 
 ```hcl
-resource "google_forms_form" "advanced" {
+resource "googleforms_form" "advanced" {
   title     = "Advanced Form"
   published = true
 
@@ -147,7 +147,7 @@ Required OAuth scopes: `forms.body`, `drive.file`, `spreadsheets`
 ## Importing Existing Forms
 
 ```bash
-terraform import google_forms_form.existing FORM_ID
+terraform import googleforms_form.existing FORM_ID
 ```
 
 See the [import guide](docs/guides/import-existing-form.md) for details.
@@ -188,3 +188,4 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for full development guide.
 ## License
 
 Apache License 2.0. See [LICENSE](LICENSE).
+

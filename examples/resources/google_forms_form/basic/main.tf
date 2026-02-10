@@ -1,4 +1,4 @@
-resource "google_forms_form" "survey" {
+resource "googleforms_form" "survey" {
   title               = "Employee Satisfaction Survey"
   description         = "Managed by Terraform."
   published           = true
@@ -30,9 +30,10 @@ resource "google_forms_form" "survey" {
 }
 
 output "form_url" {
-  value = google_forms_form.survey.responder_uri
+  value = googleforms_form.survey.responder_uri
 }
 
 output "form_id" {
-  value = google_forms_form.survey.id
+  value = googleforms_form.survey.id
 }
+

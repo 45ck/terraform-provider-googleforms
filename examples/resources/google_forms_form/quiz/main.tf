@@ -1,4 +1,4 @@
-resource "google_forms_form" "geography_quiz" {
+resource "googleforms_form" "geography_quiz" {
   title               = "Geography Quiz"
   description         = "Test your geography knowledge!"
   quiz                = true
@@ -47,5 +47,6 @@ resource "google_forms_form" "geography_quiz" {
 }
 
 output "quiz_url" {
-  value = google_forms_form.geography_quiz.responder_uri
+  value = googleforms_form.geography_quiz.responder_uri
 }
+

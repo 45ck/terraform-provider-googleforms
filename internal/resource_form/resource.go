@@ -18,7 +18,7 @@ var (
 	_ resource.ResourceWithConfigValidators = &FormResource{}
 )
 
-// FormResource implements the google_forms_form Terraform resource.
+// FormResource implements the googleforms_form Terraform resource.
 type FormResource struct {
 	client *client.Client
 }
@@ -73,3 +73,4 @@ func (r *FormResource) ConfigValidators(
 		GradingRequiresQuizValidator{},
 	}
 }
+

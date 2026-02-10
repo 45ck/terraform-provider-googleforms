@@ -14,7 +14,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-// Schema defines the Terraform schema for google_forms_form.
+// Schema defines the Terraform schema for googleforms_form.
 func (r *FormResource) Schema(
 	_ context.Context,
 	_ resource.SchemaRequest,
@@ -346,3 +346,4 @@ func gradingBlockSchema() schema.SingleNestedBlock {
 		},
 	}
 }
+

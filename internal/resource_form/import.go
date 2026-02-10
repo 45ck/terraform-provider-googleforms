@@ -11,7 +11,7 @@ import (
 )
 
 // ImportState handles terraform import for existing Google Forms.
-// Usage: terraform import google_forms_form.example FORM_ID
+// Usage: terraform import googleforms_form.example FORM_ID
 //
 // After import, items receive auto-generated item_keys (item_0, item_1, ...).
 // Users should review and rename these in their configuration.
@@ -22,3 +22,4 @@ func (r *FormResource) ImportState(
 ) {
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
 }
+

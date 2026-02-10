@@ -17,7 +17,7 @@ var (
 	_ resource.ResourceWithImportState = &DrivePermissionResource{}
 )
 
-// DrivePermissionResource implements the google_forms_drive_permission Terraform resource.
+// DrivePermissionResource implements the googleforms_drive_permission Terraform resource.
 type DrivePermissionResource struct {
 	client *client.Client
 }
@@ -55,3 +55,4 @@ func (r *DrivePermissionResource) Configure(
 
 	r.client = c
 }
+

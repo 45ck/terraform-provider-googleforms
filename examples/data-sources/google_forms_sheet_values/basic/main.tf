@@ -9,8 +9,9 @@ terraform {
 
 provider "googleforms" {}
 
-data "google_forms_sheet_values" "example" {
+data "googleforms_sheet_values" "example" {
   spreadsheet_id = "spreadsheet-id"
   range          = "Config!A1:D20"
 }
+
 

@@ -6,7 +6,7 @@ terraform {
 
 provider "googleforms" {}
 
-resource "google_forms_form" "test" {
+resource "googleforms_form" "test" {
   title       = "Terraform Test Form"
   description = "Created by Terraform provider live test."
 
@@ -19,5 +19,6 @@ resource "google_forms_form" "test" {
   }
 }
 
-output "form_url" { value = google_forms_form.test.responder_uri }
-output "edit_url" { value = google_forms_form.test.edit_uri }
+output "form_url" { value = googleforms_form.test.responder_uri }
+output "edit_url" { value = googleforms_form.test.edit_uri }
+

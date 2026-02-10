@@ -17,7 +17,7 @@ var (
 	_ resource.ResourceWithImportState = &SpreadsheetResource{}
 )
 
-// SpreadsheetResource implements the google_forms_spreadsheet Terraform resource.
+// SpreadsheetResource implements the googleforms_spreadsheet Terraform resource.
 type SpreadsheetResource struct {
 	client *client.Client
 }
@@ -57,3 +57,4 @@ func (r *SpreadsheetResource) Configure(
 
 	r.client = c
 }
+

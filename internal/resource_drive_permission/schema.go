@@ -14,7 +14,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 )
 
-// Schema defines the Terraform schema for google_forms_drive_permission.
+// Schema defines the Terraform schema for googleforms_drive_permission.
 func (r *DrivePermissionResource) Schema(
 	_ context.Context,
 	_ resource.SchemaRequest,
@@ -111,3 +111,4 @@ func (r *DrivePermissionResource) Schema(
 		},
 	}
 }
+

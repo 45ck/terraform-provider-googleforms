@@ -300,7 +300,7 @@ func (r *SheetResource) Delete(
 }
 
 // ImportState handles terraform import for existing sheets.
-// Usage: terraform import google_forms_sheet.example SPREADSHEET_ID#SHEET_ID
+// Usage: terraform import googleforms_sheet.example SPREADSHEET_ID#SHEET_ID
 func (r *SheetResource) ImportState(
 	ctx context.Context,
 	req resource.ImportStateRequest,
@@ -333,3 +333,4 @@ func parseSheetID(id string) (string, int64, diag.Diagnostics) {
 
 	return parts[0], sheetID, diags
 }
+

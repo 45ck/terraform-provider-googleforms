@@ -15,11 +15,12 @@ import (
 	sheets "google.golang.org/api/sheets/v4"
 )
 
-// requiredScopes lists the OAuth2 scopes needed for the provider.
-var requiredScopes = []string{
-	forms.FormsBodyScope,
-	drive.DriveFileScope,
-	sheets.SpreadsheetsScope,
+func oauthScopes() []string {
+	return []string{
+		forms.FormsBodyScope,
+		drive.DriveFileScope,
+		sheets.SpreadsheetsScope,
+	}
 }
 
 // NewClient creates a new Client with real Google API implementations.
@@ -80,7 +81,7 @@ func tokenSourceFromJSON(
 	credJSON []byte,
 	impersonateUser string,
 ) (oauth2.TokenSource, error) {
-	config, err := google.JWTConfigFromJSON(credJSON, requiredScopes...)
+	config, err := google.JWTConfigFromJSON(credJSON, oauthScopes()...)
 	if err != nil {
 		return nil, fmt.Errorf("parsing service account credentials: %w", err)
 	}
@@ -94,7 +95,7 @@ func tokenSourceFromJSON(
 
 // tokenSourceFromADC creates a token source from application default credentials.
 func tokenSourceFromADC(ctx context.Context) (oauth2.TokenSource, error) {
-	creds, err := google.FindDefaultCredentials(ctx, requiredScopes...)
+	creds, err := google.FindDefaultCredentials(ctx, oauthScopes()...)
 	if err != nil {
 		return nil, fmt.Errorf("finding default credentials: %w", err)
 	}

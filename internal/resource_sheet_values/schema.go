@@ -15,7 +15,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-// Schema defines the Terraform schema for google_forms_sheet_values.
+// Schema defines the Terraform schema for googleforms_sheet_values.
 func (r *SheetValuesResource) Schema(
 	_ context.Context,
 	_ resource.SchemaRequest,
@@ -77,3 +77,4 @@ func (r *SheetValuesResource) Schema(
 		},
 	}
 }
+

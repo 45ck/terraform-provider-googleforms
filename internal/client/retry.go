@@ -5,6 +5,7 @@ package client
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"math/rand"
 	"time"
@@ -109,7 +110,7 @@ func sleepWithContext(ctx context.Context, d time.Duration) error {
 // for diagnostic purposes when a retry loop is interrupted by cancellation.
 func wrapContextError(ctxErr error, lastErr error) error {
 	if lastErr != nil {
-		return fmt.Errorf("%w (last API error: %v)", ctxErr, lastErr)
+		return errors.Join(ctxErr, fmt.Errorf("last API error: %w", lastErr))
 	}
 	return ctxErr
 }

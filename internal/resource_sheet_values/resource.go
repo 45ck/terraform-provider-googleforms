@@ -17,7 +17,7 @@ var (
 	_ resource.ResourceWithImportState = &SheetValuesResource{}
 )
 
-// SheetValuesResource implements the google_forms_sheet_values Terraform resource.
+// SheetValuesResource implements the googleforms_sheet_values Terraform resource.
 type SheetValuesResource struct {
 	client *client.Client
 }
@@ -55,3 +55,4 @@ func (r *SheetValuesResource) Configure(
 
 	r.client = c
 }
+

@@ -1,12 +1,12 @@
 // Copyright 2026 terraform-provider-googleforms contributors
 // SPDX-License-Identifier: Apache-2.0
 
-// Package resourceform implements the google_forms_form Terraform resource.
+// Package resourceform implements the googleforms_form Terraform resource.
 package resourceform
 
 import "github.com/hashicorp/terraform-plugin-framework/types"
 
-// FormResourceModel describes the Terraform state for google_forms_form.
+// FormResourceModel describes the Terraform state for googleforms_form.
 type FormResourceModel struct {
 	ID                 types.String `tfsdk:"id"`
 	Title              types.String `tfsdk:"title"`
@@ -111,3 +111,4 @@ type GradingModel struct {
 	FeedbackCorrect   types.String `tfsdk:"feedback_correct"`
 	FeedbackIncorrect types.String `tfsdk:"feedback_incorrect"`
 }
+

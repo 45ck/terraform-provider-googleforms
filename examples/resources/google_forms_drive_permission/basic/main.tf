@@ -9,13 +9,13 @@ terraform {
 
 provider "googleforms" {}
 
-resource "google_forms_spreadsheet" "example" {
+resource "googleforms_spreadsheet" "example" {
   title = "Example Spreadsheet"
 }
 
 # Share the spreadsheet with a user.
-resource "google_forms_drive_permission" "share" {
-  file_id = google_forms_spreadsheet.example.id
+resource "googleforms_drive_permission" "share" {
+  file_id = googleforms_spreadsheet.example.id
 
   type = "user"
   role = "writer"
@@ -25,4 +25,5 @@ resource "google_forms_drive_permission" "share" {
   send_notification_email = false
   supports_all_drives     = false
 }
+
 

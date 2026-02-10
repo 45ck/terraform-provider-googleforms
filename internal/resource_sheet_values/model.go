@@ -1,7 +1,7 @@
 // Copyright 2026 terraform-provider-googleforms contributors
 // SPDX-License-Identifier: Apache-2.0
 
-// Package resourcesheetvalues implements the google_forms_sheet_values Terraform resource.
+// Package resourcesheetvalues implements the googleforms_sheet_values Terraform resource.
 package resourcesheetvalues
 
 import "github.com/hashicorp/terraform-plugin-framework/types"
@@ -11,7 +11,7 @@ type SheetValuesRowModel struct {
 	Cells types.List `tfsdk:"cells"`
 }
 
-// SheetValuesResourceModel describes the Terraform state for google_forms_sheet_values.
+// SheetValuesResourceModel describes the Terraform state for googleforms_sheet_values.
 type SheetValuesResourceModel struct {
 	ID               types.String `tfsdk:"id"`
 	SpreadsheetID    types.String `tfsdk:"spreadsheet_id"`
@@ -23,3 +23,4 @@ type SheetValuesResourceModel struct {
 
 	UpdatedRange types.String `tfsdk:"updated_range"`
 }
+

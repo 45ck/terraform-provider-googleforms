@@ -1,12 +1,12 @@
 // Copyright 2026 terraform-provider-googleforms contributors
 // SPDX-License-Identifier: Apache-2.0
 
-// Package resourcedrivepermission implements the google_forms_drive_permission Terraform resource.
+// Package resourcedrivepermission implements the googleforms_drive_permission Terraform resource.
 package resourcedrivepermission
 
 import "github.com/hashicorp/terraform-plugin-framework/types"
 
-// DrivePermissionResourceModel describes the Terraform state for google_forms_drive_permission.
+// DrivePermissionResourceModel describes the Terraform state for googleforms_drive_permission.
 type DrivePermissionResourceModel struct {
 	ID types.String `tfsdk:"id"`
 
@@ -24,3 +24,4 @@ type DrivePermissionResourceModel struct {
 
 	DisplayName types.String `tfsdk:"display_name"`
 }
+

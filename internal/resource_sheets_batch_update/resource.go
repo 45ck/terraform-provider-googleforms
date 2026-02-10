@@ -16,7 +16,7 @@ var (
 	_ resource.Resource = &SheetsBatchUpdateResource{}
 )
 
-// SheetsBatchUpdateResource implements the google_forms_sheets_batch_update Terraform resource.
+// SheetsBatchUpdateResource implements the googleforms_sheets_batch_update Terraform resource.
 type SheetsBatchUpdateResource struct {
 	client *client.Client
 }
@@ -54,3 +54,4 @@ func (r *SheetsBatchUpdateResource) Configure(
 
 	r.client = c
 }
+

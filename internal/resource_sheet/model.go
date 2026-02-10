@@ -1,12 +1,12 @@
 // Copyright 2026 terraform-provider-googleforms contributors
 // SPDX-License-Identifier: Apache-2.0
 
-// Package resourcesheet implements the google_forms_sheet Terraform resource.
+// Package resourcesheet implements the googleforms_sheet Terraform resource.
 package resourcesheet
 
 import "github.com/hashicorp/terraform-plugin-framework/types"
 
-// SheetResourceModel describes the Terraform state for google_forms_sheet.
+// SheetResourceModel describes the Terraform state for googleforms_sheet.
 type SheetResourceModel struct {
 	ID            types.String `tfsdk:"id"`
 	SpreadsheetID types.String `tfsdk:"spreadsheet_id"`
@@ -16,3 +16,4 @@ type SheetResourceModel struct {
 	SheetID       types.Int64  `tfsdk:"sheet_id"`
 	Index         types.Int64  `tfsdk:"index"`
 }
+

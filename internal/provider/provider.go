@@ -55,7 +55,7 @@ func (p *GoogleFormsProvider) Metadata(
 	_ provider.MetadataRequest,
 	resp *provider.MetadataResponse,
 ) {
-	resp.TypeName = "google_forms"
+	resp.TypeName = "googleforms"
 	resp.Version = p.version
 }
 
@@ -187,3 +187,4 @@ func (p *GoogleFormsProvider) DataSources(
 		datasourcesheetvalues.NewSheetValuesDataSource,
 	}
 }
+

@@ -9,14 +9,15 @@ terraform {
 
 provider "googleforms" {}
 
-resource "google_forms_spreadsheet" "example" {
+resource "googleforms_spreadsheet" "example" {
   title = "Example Spreadsheet"
 }
 
-resource "google_forms_sheet" "config" {
-  spreadsheet_id = google_forms_spreadsheet.example.id
+resource "googleforms_sheet" "config" {
+  spreadsheet_id = googleforms_spreadsheet.example.id
   title          = "Config"
   row_count      = 50
   column_count   = 10
 }
+
 

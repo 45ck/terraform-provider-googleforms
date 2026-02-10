@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 )
 
@@ -83,8 +84,23 @@ type spmPackage struct {
 }
 
 func runSPMGo() ([]byte, error) {
+	spmGoPath, err := exec.LookPath("spm-go")
+	if err != nil {
+		// In some environments the go install bin dir isn't on PATH.
+		gopathBytes, goErr := exec.Command("go", "env", "GOPATH").Output()
+		if goErr != nil {
+			return nil, fmt.Errorf("spm-go not on PATH and failed to discover GOPATH: %w", goErr)
+		}
+		gopath := strings.TrimSpace(string(gopathBytes))
+		candidate := filepath.Join(gopath, "bin", "spm-go")
+		if _, statErr := os.Stat(candidate); statErr != nil {
+			return nil, fmt.Errorf("spm-go not found on PATH and not present at %q", candidate)
+		}
+		spmGoPath = candidate
+	}
+
 	// Prefer explicit JSON output.
-	cmd := exec.Command("spm-go", "instability", "--format", "json")
+	cmd := exec.Command(spmGoPath, "instability", "--format", "json")
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 	cmd.Stdout = &stdout

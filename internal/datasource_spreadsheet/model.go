@@ -5,7 +5,7 @@ package datasourcespreadsheet
 
 import "github.com/hashicorp/terraform-plugin-framework/types"
 
-// SpreadsheetDataSourceModel describes the Terraform state for google_forms_spreadsheet data source.
+// SpreadsheetDataSourceModel describes the Terraform state for googleforms_spreadsheet data source.
 type SpreadsheetDataSourceModel struct {
 	ID       types.String `tfsdk:"id"`
 	Title    types.String `tfsdk:"title"`
@@ -13,3 +13,4 @@ type SpreadsheetDataSourceModel struct {
 	TimeZone types.String `tfsdk:"time_zone"`
 	URL      types.String `tfsdk:"url"`
 }
+

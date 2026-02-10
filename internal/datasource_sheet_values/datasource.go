@@ -19,7 +19,7 @@ import (
 
 var _ datasource.DataSource = &SheetValuesDataSource{}
 
-// SheetValuesDataSource implements the google_forms_sheet_values data source.
+// SheetValuesDataSource implements the googleforms_sheet_values data source.
 type SheetValuesDataSource struct {
 	client *client.Client
 }
@@ -149,3 +149,4 @@ func valueRangeToRows(vr *sheets.ValueRange) (types.List, diag.Diagnostics) {
 	}
 	return list, diags
 }
+

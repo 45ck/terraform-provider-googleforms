@@ -9,7 +9,8 @@ terraform {
 
 provider "googleforms" {}
 
-resource "google_forms_spreadsheet" "example" {
+resource "googleforms_spreadsheet" "example" {
   title = "Example Spreadsheet"
 }
+
 

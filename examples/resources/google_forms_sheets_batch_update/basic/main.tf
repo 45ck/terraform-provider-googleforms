@@ -9,13 +9,13 @@ terraform {
 
 provider "googleforms" {}
 
-resource "google_forms_spreadsheet" "example" {
+resource "googleforms_spreadsheet" "example" {
   title = "Example Spreadsheet"
 }
 
 # Escape hatch: apply raw Sheets batchUpdate requests.
-resource "google_forms_sheets_batch_update" "add_tab" {
-  spreadsheet_id = google_forms_spreadsheet.example.id
+resource "googleforms_sheets_batch_update" "add_tab" {
+  spreadsheet_id = googleforms_spreadsheet.example.id
 
   # This JSON is an array of Sheets Request objects.
   requests_json = jsonencode([
@@ -31,4 +31,5 @@ resource "google_forms_sheets_batch_update" "add_tab" {
   include_spreadsheet_in_response = false
   store_response_json            = false
 }
+
 

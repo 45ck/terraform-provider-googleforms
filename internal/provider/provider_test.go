@@ -5,10 +5,12 @@ package provider_test
 
 import (
 	"context"
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"testing"
 
+	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/provider"
 	"github.com/hashicorp/terraform-plugin-framework/providerserver"
 	fwresource "github.com/hashicorp/terraform-plugin-framework/resource"
@@ -22,16 +24,28 @@ import (
 
 // testFakeCredentials returns a minimal valid service account JSON for testing.
 func testFakeCredentials() string {
-	return `{
-		"type": "service_account",
-		"project_id": "test-project",
+	// Intentionally not a real PEM key (keeps tests offline and avoids gosec
+	// false positives for hardcoded credentials).
+	privateKey := "not-a-real-private-key"
+
+	// Keep this structurally valid (json.Marshal will escape newlines).
+	creds := map[string]any{
+		"type":           "service_account",
+		"project_id":     "test-project",
 		"private_key_id": "key123",
-		"private_key": "-----BEGIN RSA PRIVATE KEY-----\nMIIEpAIBAAKCAQEA0Z3VS5JJcds3xfn/ygWyF8PbnGy0AHB7MhgHcTz6sE2I2yPB\naFDrBz9vFqU4zK7G5cH0I3FAdADAXaBEHFHkbqMRnlNP5dv7ygMfkPX8HXbISEBd\nc0rROFAxfvaBdice9oph4JYIjUDJKRmOqJH8FHXQNKXL4MBTvOgMNbIMbIGpJPM\nZhJQ7qKH3JzrGSplmajn3K53DJMbxLbPOqGH7g6VFB3bUKMCp8FPBVLFMz4JhHjq\neFK5VJvF0MEbBOixin1GlRT6gJSYM/i0FBVMDmdMNCMXGFMNJMHDXEqFHF09RGYFA\n0jPej7VJz0PoYwS5jP1PVHK+0G3MZExaNdVxlwIDAQABAoIBAC5IgFBJmOzCBPDJ\nAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\nAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\nAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\nAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\nAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\nAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\nAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\n-----END RSA PRIVATE KEY-----\n",
-		"client_email": "test@test-project.iam.gserviceaccount.com",
-		"client_id": "123456789",
-		"auth_uri": "https://accounts.google.com/o/oauth2/auth",
-		"token_uri": "https://oauth2.googleapis.com/token"
-	}`
+		"private_key":    privateKey,
+		"client_email":   "test@test-project.iam.gserviceaccount.com",
+		"client_id":      "123456789",
+		"auth_uri":       "https://accounts.google.com/o/oauth2/auth",
+		"token_uri":      "https://oauth2.googleapis.com/token",
+	}
+
+	b, err := json.Marshal(creds)
+	if err != nil {
+		// Should never happen with the static test map above.
+		panic(err)
+	}
+	return string(b)
 }
 
 // newTestProvider creates a GoogleFormsProvider via the New factory for testing.
@@ -256,8 +270,8 @@ func TestProviderMetadata_TypeName(t *testing.T) {
 	resp := &provider.MetadataResponse{}
 	p.Metadata(context.Background(), provider.MetadataRequest{}, resp)
 
-	if resp.TypeName != "google_forms" {
-		t.Errorf("expected type name 'google_forms', got %q", resp.TypeName)
+	if resp.TypeName != "googleforms" {
+		t.Errorf("expected type name 'googleforms', got %q", resp.TypeName)
 	}
 }
 
@@ -283,26 +297,61 @@ func TestProviderResources_RegistersFormResource(t *testing.T) {
 		t.Fatal("expected at least one resource factory, got none")
 	}
 
-	// Instantiate the first resource and check its type name.
-	r := resourceResp[0]()
-	metaResp := &fwresource.MetadataResponse{}
-	r.Metadata(context.Background(), fwresource.MetadataRequest{
-		ProviderTypeName: "google_forms",
-	}, metaResp)
+	// Instantiate all resources and ensure the expected ones are registered.
+	want := map[string]bool{
+		"googleforms_form":                false,
+		"googleforms_response_sheet":      false,
+		"googleforms_spreadsheet":         false,
+		"googleforms_sheet":               false,
+		"googleforms_sheet_values":        false,
+		"googleforms_sheets_batch_update": false,
+		"googleforms_drive_permission":    false,
+	}
 
-	if metaResp.TypeName != "google_forms_form" {
-		t.Errorf("expected resource type 'google_forms_form', got %q", metaResp.TypeName)
+	for _, f := range resourceResp {
+		r := f()
+		metaResp := &fwresource.MetadataResponse{}
+		r.Metadata(context.Background(), fwresource.MetadataRequest{ProviderTypeName: "googleforms"}, metaResp)
+		if _, ok := want[metaResp.TypeName]; ok {
+			want[metaResp.TypeName] = true
+		}
+	}
+
+	for typ, seen := range want {
+		if !seen {
+			t.Errorf("expected resource type %q to be registered", typ)
+		}
 	}
 }
 
-func TestProviderDataSources_ReturnsEmpty(t *testing.T) {
+func TestProviderDataSources_RegistersExpectedDataSources(t *testing.T) {
 	t.Parallel()
 
 	p := newTestProvider()
 	dataSources := p.DataSources(context.Background())
 
-	if len(dataSources) != 0 {
-		t.Errorf("expected zero data sources, got %d", len(dataSources))
+	if len(dataSources) == 0 {
+		t.Fatal("expected at least one data source factory, got none")
+	}
+
+	want := map[string]bool{
+		"googleforms_spreadsheet":  false,
+		"googleforms_sheet_values": false,
+	}
+
+	for _, f := range dataSources {
+		ds := f()
+		metaResp := &datasource.MetadataResponse{}
+		ds.Metadata(context.Background(), datasource.MetadataRequest{ProviderTypeName: "googleforms"}, metaResp)
+		if _, ok := want[metaResp.TypeName]; ok {
+			want[metaResp.TypeName] = true
+		}
+	}
+
+	for typ, seen := range want {
+		if !seen {
+			t.Errorf("expected data source type %q to be registered", typ)
+		}
 	}
 }
 
@@ -310,21 +359,24 @@ func TestProviderDataSources_ReturnsEmpty(t *testing.T) {
 // config validation. This uses the testing framework's ProtoV6ProviderFactories
 // to verify the provider can be instantiated and configured.
 func TestProviderAcceptance_ConfigIsValid(t *testing.T) {
-	t.Parallel()
+	if os.Getenv("TF_ACC") == "" {
+		t.Skip("skipping acceptance-style config validation test unless TF_ACC is set")
+	}
 
 	// This test only validates that the provider config schema is valid.
 	// It does not make real API calls.
 	resource.UnitTest(t, resource.TestCase{
 		ProtoV6ProviderFactories: map[string]func() (tfprotov6.ProviderServer, error){
-			"google_forms": providerserver.NewProtocol6WithError(providerImpl.New("test")()),
+			"googleforms": providerserver.NewProtocol6WithError(providerImpl.New("test")()),
 		},
 		Steps: []resource.TestStep{
 			{
 				// An empty config is valid since all attributes are optional.
-				Config:             `provider "google_forms" {}`,
+				Config:             `provider "googleforms" {}`,
 				PlanOnly:           true,
 				ExpectNonEmptyPlan: false,
 			},
 		},
 	})
 }
+

@@ -160,7 +160,7 @@
 
 ## 12. `internal/provider/provider.go`
 
-**Summary:** Implements the Terraform provider. Handles credentials resolution (inline JSON, file path, env var, or ADC), creates the API client, and registers the `google_forms_form` resource.
+**Summary:** Implements the Terraform provider. Handles credentials resolution (inline JSON, file path, env var, or ADC), creates the API client, and registers the `googleforms_form` resource.
 
 ### Defects
 
@@ -186,7 +186,7 @@
 
 ## 14. `internal/resource_form/schema.go`
 
-**Summary:** Defines the Terraform schema for `google_forms_form` including all attributes, nested blocks for item types (multiple_choice, short_answer, paragraph), grading, and plan modifiers.
+**Summary:** Defines the Terraform schema for `googleforms_form` including all attributes, nested blocks for item types (multiple_choice, short_answer, paragraph), grading, and plan modifiers.
 
 ### Defects
 
@@ -450,3 +450,4 @@ The **Q-UP-1** question about batch ordering when disabling quiz mode deserves i
 ---
 
 *End of Reader Report*
+

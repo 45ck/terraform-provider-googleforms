@@ -37,7 +37,10 @@ func buildPlan(t *testing.T, vals map[string]tftypes.Value) tfsdk.Plan {
 	schemaResp := testSchemaResp()
 	s := schemaResp.Schema
 	tfType := s.Type().TerraformType(context.Background())
-	objType := tfType.(tftypes.Object)
+	objType, ok := tfType.(tftypes.Object)
+	if !ok {
+		t.Fatalf("expected tftypes.Object, got %T", tfType)
+	}
 	merged := make(map[string]tftypes.Value)
 	for k, v := range objType.AttributeTypes {
 		merged[k] = tftypes.NewValue(v, nil)
@@ -56,7 +59,10 @@ func buildState(t *testing.T, vals map[string]tftypes.Value) tfsdk.State {
 	schemaResp := testSchemaResp()
 	s := schemaResp.Schema
 	tfType := s.Type().TerraformType(context.Background())
-	objType := tfType.(tftypes.Object)
+	objType, ok := tfType.(tftypes.Object)
+	if !ok {
+		t.Fatalf("expected tftypes.Object, got %T", tfType)
+	}
 	merged := make(map[string]tftypes.Value)
 	for k, v := range objType.AttributeTypes {
 		merged[k] = tftypes.NewValue(v, nil)
@@ -76,7 +82,10 @@ func emptyState(t *testing.T) tfsdk.State {
 	schemaResp := testSchemaResp()
 	s := schemaResp.Schema
 	tfType := s.Type().TerraformType(context.Background())
-	objType := tfType.(tftypes.Object)
+	objType, ok := tfType.(tftypes.Object)
+	if !ok {
+		t.Fatalf("expected tftypes.Object, got %T", tfType)
+	}
 	return tfsdk.State{
 		Schema: s,
 		Raw:    tftypes.NewValue(objType, nil),
@@ -229,9 +238,9 @@ func TestCreate_WithItems_Success(t *testing.T) {
 		"published":           tftypes.NewValue(tftypes.Bool, false),
 		"accepting_responses": tftypes.NewValue(tftypes.Bool, false),
 		"quiz":                tftypes.NewValue(tftypes.Bool, false),
-		"item": itemListVal(
-			saItem("q1", "Name?", nil),
-			mcItem("q2", "Color?", []string{"Red", "Blue"}, nil),
+		"item": itemListVal(t,
+			saItem(t, "q1", "Name?", nil),
+			mcItem(t, "q2", "Color?", []string{"Red", "Blue"}, nil),
 		),
 	})
 
@@ -386,7 +395,7 @@ func TestCreate_BatchUpdateError_PartialStateSaved(t *testing.T) {
 		"published":           tftypes.NewValue(tftypes.Bool, false),
 		"accepting_responses": tftypes.NewValue(tftypes.Bool, false),
 		"quiz":                tftypes.NewValue(tftypes.Bool, false),
-		"item":                itemListVal(saItem("q1", "Name?", nil)),
+		"item":                itemListVal(t, saItem(t, "q1", "Name?", nil)),
 	})
 
 	resp := &resource.CreateResponse{
@@ -674,7 +683,7 @@ func TestUpdate_ItemsReplaced_Success(t *testing.T) {
 		"published":           tftypes.NewValue(tftypes.Bool, false),
 		"accepting_responses": tftypes.NewValue(tftypes.Bool, false),
 		"quiz":                tftypes.NewValue(tftypes.Bool, false),
-		"item":                itemListVal(saItem("q_old", "Old Q?", nil)),
+		"item":                itemListVal(t, saItem(t, "q_old", "Old Q?", nil)),
 	})
 
 	plan := buildPlan(t, map[string]tftypes.Value{
@@ -683,7 +692,7 @@ func TestUpdate_ItemsReplaced_Success(t *testing.T) {
 		"published":           tftypes.NewValue(tftypes.Bool, false),
 		"accepting_responses": tftypes.NewValue(tftypes.Bool, false),
 		"quiz":                tftypes.NewValue(tftypes.Bool, false),
-		"item":                itemListVal(saItem("q_new", "New Q?", nil)),
+		"item":                itemListVal(t, saItem(t, "q_new", "New Q?", nil)),
 	})
 
 	resp := &resource.UpdateResponse{
@@ -914,8 +923,8 @@ func TestCreate_WithQuizGrading_Success(t *testing.T) {
 		"published":           tftypes.NewValue(tftypes.Bool, false),
 		"accepting_responses": tftypes.NewValue(tftypes.Bool, false),
 		"quiz":                tftypes.NewValue(tftypes.Bool, true),
-		"item": itemListVal(
-			mcItem("q1", "Capital of France?", []string{"Paris", "London"}, grading),
+		"item": itemListVal(t,
+			mcItem(t, "q1", "Capital of France?", []string{"Paris", "London"}, grading),
 		),
 	})
 
@@ -1024,24 +1033,28 @@ func TestRead_WithItems_CorrectMapping(t *testing.T) {
 	ctx := context.Background()
 
 	// State includes items with google_item_id set so key map can be built.
-	iType := itemBlockType()
-	gType := iType.AttributeTypes["short_answer"].(tftypes.Object).AttributeTypes["grading"]
+	iType := itemBlockType(t)
+	saType, ok := iType.AttributeTypes["short_answer"].(tftypes.Object)
+	if !ok {
+		t.Fatalf("expected short_answer to be tftypes.Object, got %T", iType.AttributeTypes["short_answer"])
+	}
+	gType := saType.AttributeTypes["grading"]
 
-	sa := tftypes.NewValue(iType.AttributeTypes["short_answer"], map[string]tftypes.Value{
+	sa := newObjectValue(saType, map[string]tftypes.Value{
 		"question_text": tftypes.NewValue(tftypes.String, "Name?"),
 		"required":      tftypes.NewValue(tftypes.Bool, false),
 		"grading":       tftypes.NewValue(gType, nil),
 	})
-	item1 := tftypes.NewValue(iType, map[string]tftypes.Value{
-		"item_key":        tftypes.NewValue(tftypes.String, "q1"),
-		"google_item_id":  tftypes.NewValue(tftypes.String, "gid_1"),
-		"multiple_choice": tftypes.NewValue(iType.AttributeTypes["multiple_choice"], nil),
-		"short_answer":    sa,
-		"paragraph":       tftypes.NewValue(iType.AttributeTypes["paragraph"], nil),
+	item1 := newItemVal(iType, "q1", map[string]tftypes.Value{
+		"google_item_id": tftypes.NewValue(tftypes.String, "gid_1"),
+		"short_answer":   sa,
 	})
 
-	mcType := iType.AttributeTypes["multiple_choice"]
-	mc := tftypes.NewValue(mcType, map[string]tftypes.Value{
+	mcType, ok := iType.AttributeTypes["multiple_choice"].(tftypes.Object)
+	if !ok {
+		t.Fatalf("expected multiple_choice to be tftypes.Object, got %T", iType.AttributeTypes["multiple_choice"])
+	}
+	mc := newObjectValue(mcType, map[string]tftypes.Value{
 		"question_text": tftypes.NewValue(tftypes.String, "Color?"),
 		"options": tftypes.NewValue(tftypes.List{ElementType: tftypes.String}, []tftypes.Value{
 			tftypes.NewValue(tftypes.String, "Red"),
@@ -1050,15 +1063,12 @@ func TestRead_WithItems_CorrectMapping(t *testing.T) {
 		"required": tftypes.NewValue(tftypes.Bool, false),
 		"grading":  tftypes.NewValue(gType, nil),
 	})
-	item2 := tftypes.NewValue(iType, map[string]tftypes.Value{
-		"item_key":        tftypes.NewValue(tftypes.String, "q2"),
+	item2 := newItemVal(iType, "q2", map[string]tftypes.Value{
 		"google_item_id":  tftypes.NewValue(tftypes.String, "gid_2"),
 		"multiple_choice": mc,
-		"short_answer":    tftypes.NewValue(iType.AttributeTypes["short_answer"], nil),
-		"paragraph":       tftypes.NewValue(iType.AttributeTypes["paragraph"], nil),
 	})
 
-	itemList := tftypes.NewValue(tftypes.List{ElementType: iType}, []tftypes.Value{item1, item2})
+	itemList := itemListVal(t, item1, item2)
 
 	state := buildState(t, map[string]tftypes.Value{
 		"id":                  tftypes.NewValue(tftypes.String, "items-read-id"),

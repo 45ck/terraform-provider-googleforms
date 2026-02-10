@@ -158,7 +158,7 @@ func (r *ResponseSheetResource) Update(
 	// attributes. If it is reached, return an error to surface the issue.
 	resp.Diagnostics.AddError(
 		"Unexpected Update",
-		"google_forms_response_sheet does not support in-place updates. "+
+		"googleforms_response_sheet does not support in-place updates. "+
 			"Both form_id and spreadsheet_id require replacement.",
 	)
 }
@@ -196,3 +196,4 @@ func parseCompositeID(id string) (formID string, spreadsheetID string, err error
 
 	return parts[0], parts[1], nil
 }
+

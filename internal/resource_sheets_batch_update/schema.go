@@ -13,7 +13,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 )
 
-// Schema defines the Terraform schema for google_forms_sheets_batch_update.
+// Schema defines the Terraform schema for googleforms_sheets_batch_update.
 func (r *SheetsBatchUpdateResource) Schema(
 	_ context.Context,
 	_ resource.SchemaRequest,
@@ -60,3 +60,4 @@ func (r *SheetsBatchUpdateResource) Schema(
 		},
 	}
 }
+

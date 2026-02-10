@@ -1,12 +1,12 @@
 // Copyright 2026 terraform-provider-googleforms contributors
 // SPDX-License-Identifier: Apache-2.0
 
-// Package resourcesheetsbatchupdate implements the google_forms_sheets_batch_update Terraform resource.
+// Package resourcesheetsbatchupdate implements the googleforms_sheets_batch_update Terraform resource.
 package resourcesheetsbatchupdate
 
 import "github.com/hashicorp/terraform-plugin-framework/types"
 
-// SheetsBatchUpdateResourceModel describes the Terraform state for google_forms_sheets_batch_update.
+// SheetsBatchUpdateResourceModel describes the Terraform state for googleforms_sheets_batch_update.
 type SheetsBatchUpdateResourceModel struct {
 	ID types.String `tfsdk:"id"`
 
@@ -18,3 +18,4 @@ type SheetsBatchUpdateResourceModel struct {
 
 	ResponseJSON types.String `tfsdk:"response_json"`
 }
+

@@ -12,7 +12,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 )
 
-// Schema defines the Terraform schema for google_forms_response_sheet.
+// Schema defines the Terraform schema for googleforms_response_sheet.
 func (r *ResponseSheetResource) Schema(
 	_ context.Context,
 	_ resource.SchemaRequest,
@@ -60,3 +60,4 @@ func responseSheetAttributes() map[string]schema.Attribute {
 		},
 	}
 }
+

@@ -17,7 +17,7 @@ var (
 	_ datasource.DataSource = &SpreadsheetDataSource{}
 )
 
-// SpreadsheetDataSource implements the google_forms_spreadsheet data source.
+// SpreadsheetDataSource implements the googleforms_spreadsheet data source.
 type SpreadsheetDataSource struct {
 	client *client.Client
 }
@@ -119,3 +119,4 @@ func (d *SpreadsheetDataSource) Read(
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
+

@@ -1,4 +1,4 @@
-resource "google_forms_form" "advanced" {
+resource "googleforms_form" "advanced" {
   title               = "Advanced Survey (JSON Mode)"
   description         = "Uses content_json for unsupported question types."
   published           = true
@@ -39,5 +39,6 @@ resource "google_forms_form" "advanced" {
 }
 
 output "advanced_form_url" {
-  value = google_forms_form.advanced.responder_uri
+  value = googleforms_form.advanced.responder_uri
 }
+

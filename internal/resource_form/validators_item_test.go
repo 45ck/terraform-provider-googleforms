@@ -18,7 +18,7 @@ func TestOptionsRequiredForChoice_WithOptions_Passes(t *testing.T) {
 	t.Parallel()
 	cfg := buildConfig(t, map[string]tftypes.Value{
 		"title": tftypes.NewValue(tftypes.String, "T"),
-		"item":  itemListVal(mcItem("q1", "Pick one?", []string{"A", "B"}, nil)),
+		"item":  itemListVal(t, mcItem(t, "q1", "Pick one?", []string{"A", "B"}, nil)),
 	})
 	diags := runValidators(t, cfg, OptionsRequiredForChoiceValidator{})
 	expectNoError(t, diags)
@@ -28,7 +28,7 @@ func TestOptionsRequiredForChoice_EmptyOptions_Error(t *testing.T) {
 	t.Parallel()
 	cfg := buildConfig(t, map[string]tftypes.Value{
 		"title": tftypes.NewValue(tftypes.String, "T"),
-		"item":  itemListVal(mcItem("q1", "Pick one?", []string{}, nil)),
+		"item":  itemListVal(t, mcItem(t, "q1", "Pick one?", []string{}, nil)),
 	})
 	diags := runValidators(t, cfg, OptionsRequiredForChoiceValidator{})
 	expectErrorContains(t, diags, "requires at least one option")
@@ -49,7 +49,7 @@ func TestCorrectAnswerInOptions_ValidAnswer_Passes(t *testing.T) {
 	cfg := buildConfig(t, map[string]tftypes.Value{
 		"title": tftypes.NewValue(tftypes.String, "T"),
 		"quiz":  tftypes.NewValue(tftypes.Bool, true),
-		"item":  itemListVal(mcItem("q1", "Pick?", []string{"A", "B", "C"}, grading)),
+		"item":  itemListVal(t, mcItem(t, "q1", "Pick?", []string{"A", "B", "C"}, grading)),
 	})
 	diags := runValidators(t, cfg, CorrectAnswerInOptionsValidator{})
 	expectNoError(t, diags)
@@ -66,7 +66,7 @@ func TestCorrectAnswerInOptions_InvalidAnswer_Error(t *testing.T) {
 	cfg := buildConfig(t, map[string]tftypes.Value{
 		"title": tftypes.NewValue(tftypes.String, "T"),
 		"quiz":  tftypes.NewValue(tftypes.Bool, true),
-		"item":  itemListVal(mcItem("q1", "Pick?", []string{"A", "B", "C"}, grading)),
+		"item":  itemListVal(t, mcItem(t, "q1", "Pick?", []string{"A", "B", "C"}, grading)),
 	})
 	diags := runValidators(t, cfg, CorrectAnswerInOptionsValidator{})
 	expectErrorContains(t, diags, `correct_answer "D"`)
@@ -83,7 +83,7 @@ func TestCorrectAnswerInOptions_NoCorrectAnswer_Passes(t *testing.T) {
 	cfg := buildConfig(t, map[string]tftypes.Value{
 		"title": tftypes.NewValue(tftypes.String, "T"),
 		"quiz":  tftypes.NewValue(tftypes.Bool, true),
-		"item":  itemListVal(mcItem("q1", "Pick?", []string{"A", "B"}, grading)),
+		"item":  itemListVal(t, mcItem(t, "q1", "Pick?", []string{"A", "B"}, grading)),
 	})
 	diags := runValidators(t, cfg, CorrectAnswerInOptionsValidator{})
 	expectNoError(t, diags)
@@ -104,7 +104,7 @@ func TestGradingRequiresQuiz_QuizTrueWithGrading_Passes(t *testing.T) {
 	cfg := buildConfig(t, map[string]tftypes.Value{
 		"title": tftypes.NewValue(tftypes.String, "T"),
 		"quiz":  tftypes.NewValue(tftypes.Bool, true),
-		"item":  itemListVal(saItem("q1", "Q?", grading)),
+		"item":  itemListVal(t, saItem(t, "q1", "Q?", grading)),
 	})
 	diags := runValidators(t, cfg, GradingRequiresQuizValidator{})
 	expectNoError(t, diags)
@@ -121,7 +121,7 @@ func TestGradingRequiresQuiz_QuizFalseWithGrading_Error(t *testing.T) {
 	cfg := buildConfig(t, map[string]tftypes.Value{
 		"title": tftypes.NewValue(tftypes.String, "T"),
 		"quiz":  tftypes.NewValue(tftypes.Bool, false),
-		"item":  itemListVal(saItem("q1", "Q?", grading)),
+		"item":  itemListVal(t, saItem(t, "q1", "Q?", grading)),
 	})
 	diags := runValidators(t, cfg, GradingRequiresQuizValidator{})
 	expectErrorContains(t, diags, "Grading requires quiz mode")
@@ -132,7 +132,7 @@ func TestGradingRequiresQuiz_NoGrading_Passes(t *testing.T) {
 	cfg := buildConfig(t, map[string]tftypes.Value{
 		"title": tftypes.NewValue(tftypes.String, "T"),
 		"quiz":  tftypes.NewValue(tftypes.Bool, false),
-		"item":  itemListVal(saItem("q1", "Q?", nil)),
+		"item":  itemListVal(t, saItem(t, "q1", "Q?", nil)),
 	})
 	diags := runValidators(t, cfg, GradingRequiresQuizValidator{})
 	expectNoError(t, diags)
@@ -149,7 +149,7 @@ func TestGradingRequiresQuiz_MultipleChoice_Error(t *testing.T) {
 	cfg := buildConfig(t, map[string]tftypes.Value{
 		"title": tftypes.NewValue(tftypes.String, "T"),
 		"quiz":  tftypes.NewValue(tftypes.Bool, false),
-		"item":  itemListVal(mcItem("q1", "Pick?", []string{"A", "B"}, grading)),
+		"item":  itemListVal(t, mcItem(t, "q1", "Pick?", []string{"A", "B"}, grading)),
 	})
 	diags := runValidators(t, cfg, GradingRequiresQuizValidator{})
 	expectErrorContains(t, diags, "Grading requires quiz mode")
@@ -166,7 +166,7 @@ func TestGradingRequiresQuiz_Paragraph_Error(t *testing.T) {
 	cfg := buildConfig(t, map[string]tftypes.Value{
 		"title": tftypes.NewValue(tftypes.String, "T"),
 		"quiz":  tftypes.NewValue(tftypes.Bool, false),
-		"item":  itemListVal(paraItem("q1", "Essay?", grading)),
+		"item":  itemListVal(t, paraItem(t, "q1", "Essay?", grading)),
 	})
 	diags := runValidators(t, cfg, GradingRequiresQuizValidator{})
 	expectErrorContains(t, diags, "Grading requires quiz mode")

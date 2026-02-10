@@ -14,7 +14,7 @@ import (
 // Compile-time interface checks.
 var _ resource.Resource = &ResponseSheetResource{}
 
-// ResponseSheetResource implements the google_forms_response_sheet Terraform resource.
+// ResponseSheetResource implements the googleforms_response_sheet Terraform resource.
 type ResponseSheetResource struct {
 	client *client.Client
 }
@@ -54,3 +54,4 @@ func (r *ResponseSheetResource) Configure(
 
 	r.client = c
 }
+

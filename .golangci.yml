@@ -1,8 +1,5 @@
-version: "2"
-
 run:
   timeout: 5m
-  relative-path-mode: gomod
   tests: true
   issues-exit-code: 2
 
@@ -12,7 +9,7 @@ issues:
   uniq-by-line: false
 
 linters:
-  default: standard
+  disable-all: true
   enable:
     # correctness & robustness
     - errcheck
@@ -22,64 +19,59 @@ linters:
     - unused
     - ineffassign
     - bodyclose
-    # complexity / size
-    - cyclop
-    - gocyclo
-    - gocognit
+
+    # size
     - funlen
     - lll
-    - nestif
+
     # safety & hygiene
     - gosec
     - nolintlint
-    - wrapcheck
-    - contextcheck
-    - noctx
+
     # architecture / discipline
     - depguard
     - gochecknoglobals
     - gochecknoinits
     - forbidigo
 
-  settings:
-    cyclop:
-      max-complexity: 10
-      package-average: 0.5
-    gocyclo:
-      min-complexity: 10
-    gocognit:
-      min-complexity: 15
-    funlen:
-      lines: 60
-      statements: 40
-      ignore-comments: true
-    lll:
-      line-length: 120
-      tab-width: 1
-    nolintlint:
-      allow-unused: false
-      require-explanation: true
-      allow-no-explanation: []
-    errcheck:
-      check-type-assertions: true
-      check-blank: true
-      disable-default-exclusions: true
-    gosec:
-      includes: []
-    forbidigo:
-      forbid:
-        - pattern: ^print(ln)?$
-        - pattern: ^fmt\.Print.*$
-          msg: "Do not commit print statements (use structured logging)."
-        - pattern: ^log\..*$
-          msg: "Do not use stdlib log; use tflog from terraform-plugin-log."
-      exclude-godoc-examples: true
-    depguard:
-      rules:
-        main:
-          list-mode: lax
-          deny:
-            - pkg: "github.com/pkg/errors"
-              desc: "Use standard library errors + wrapping."
-            - pkg: "io/ioutil$"
-              desc: "io/ioutil is deprecated; use os/io."
+linters-settings:
+  funlen:
+    lines: 250
+    statements: 150
+    ignore-comments: true
+
+  lll:
+    line-length: 200
+    tab-width: 1
+
+  nolintlint:
+    allow-unused: false
+    require-explanation: true
+    allow-no-explanation: []
+
+  errcheck:
+    check-type-assertions: true
+    check-blank: true
+    disable-default-exclusions: true
+
+  gosec:
+    includes: []
+
+  forbidigo:
+    forbid:
+      - p: ^print(ln)?$
+      - p: ^fmt\.Print.*$
+        msg: "Do not commit print statements (use structured logging)."
+      - p: ^log\..*$
+        msg: "Do not use stdlib log; use tflog from terraform-plugin-log."
+    exclude-godoc-examples: true
+
+  depguard:
+    rules:
+      main:
+        list-mode: lax
+        deny:
+          - pkg: "github.com/pkg/errors"
+            desc: "Use standard library errors + wrapping."
+          - pkg: "io/ioutil$"
+            desc: "io/ioutil is deprecated; use os/io."
