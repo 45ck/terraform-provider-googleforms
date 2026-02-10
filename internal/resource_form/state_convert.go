@@ -173,6 +173,27 @@ func tfItemsToConvertItems(ctx context.Context, items types.List) ([]convert.Ite
 			result[i].Title = tf.TextItem.Title.ValueString()
 		}
 
+		if tf.Image != nil {
+			result[i].Image = &convert.ImageBlock{
+				Title:       tf.Image.Title.ValueString(),
+				Description: tf.Image.Description.ValueString(),
+				SourceURI:   tf.Image.SourceURI.ValueString(),
+				AltText:     tf.Image.AltText.ValueString(),
+				ContentURI:  tf.Image.ContentURI.ValueString(),
+			}
+			result[i].Title = tf.Image.Title.ValueString()
+		}
+
+		if tf.Video != nil {
+			result[i].Video = &convert.VideoBlock{
+				Title:       tf.Video.Title.ValueString(),
+				Description: tf.Video.Description.ValueString(),
+				YoutubeURI:  tf.Video.YoutubeURI.ValueString(),
+				Caption:     tf.Video.Caption.ValueString(),
+			}
+			result[i].Title = tf.Video.Title.ValueString()
+		}
+
 		if tf.SectionHeader != nil {
 			result[i].SectionHeader = &convert.SectionHeaderBlock{
 				Title:       tf.SectionHeader.Title.ValueString(),
@@ -198,21 +219,35 @@ func tfGradingToConvert(g *GradingModel) *convert.GradingBlock {
 // convertFormModelToTFState maps a convert.FormModel back into a
 // FormResourceModel, preserving plan values for non-computed fields.
 func convertFormModelToTFState(model *convert.FormModel, plan FormResourceModel) FormResourceModel {
+	manageMode := plan.ManageMode
+	if manageMode.IsNull() || manageMode.IsUnknown() || manageMode.ValueString() == "" {
+		manageMode = types.StringValue("all")
+	}
+	partialNewItemPolicy := plan.PartialNewItemPolicy
+	if partialNewItemPolicy.IsNull() || partialNewItemPolicy.IsUnknown() || partialNewItemPolicy.ValueString() == "" {
+		partialNewItemPolicy = types.StringValue("append")
+	}
+	conflictPolicy := plan.ConflictPolicy
+	if conflictPolicy.IsNull() || conflictPolicy.IsUnknown() || conflictPolicy.ValueString() == "" {
+		conflictPolicy = types.StringValue("overwrite")
+	}
+
 	state := FormResourceModel{
-		ID:                  types.StringValue(model.ID),
-		Title:               types.StringValue(model.Title),
-		Description:         types.StringValue(model.Description),
-		Published:           plan.Published,
-		AcceptingResponses:  plan.AcceptingResponses,
-		Quiz:                types.BoolValue(model.Quiz),
-		UpdateStrategy:      plan.UpdateStrategy,
-		DangerousReplaceAll: plan.DangerousReplaceAll,
-		ManageMode:          plan.ManageMode,
-		ConflictPolicy:      plan.ConflictPolicy,
-		ContentJSON:         plan.ContentJSON,
-		ResponderURI:        types.StringValue(model.ResponderURI),
-		DocumentTitle:       types.StringValue(model.DocumentTitle),
-		RevisionID:          types.StringValue(model.RevisionID),
+		ID:                   types.StringValue(model.ID),
+		Title:                types.StringValue(model.Title),
+		Description:          types.StringValue(model.Description),
+		Published:            plan.Published,
+		AcceptingResponses:   plan.AcceptingResponses,
+		Quiz:                 types.BoolValue(model.Quiz),
+		UpdateStrategy:       plan.UpdateStrategy,
+		DangerousReplaceAll:  plan.DangerousReplaceAll,
+		ManageMode:           manageMode,
+		PartialNewItemPolicy: partialNewItemPolicy,
+		ConflictPolicy:       conflictPolicy,
+		ContentJSON:          plan.ContentJSON,
+		ResponderURI:         types.StringValue(model.ResponderURI),
+		DocumentTitle:        types.StringValue(model.DocumentTitle),
+		RevisionID:           types.StringValue(model.RevisionID),
 	}
 
 	// edit_uri follows a known pattern
@@ -411,6 +446,47 @@ func convertItemModelToTF(ctx context.Context, item convert.ItemModel, diags *di
 		}
 	}
 
+	if item.Image != nil {
+		img := item.Image
+		tf.Image = &ImageModel{
+			SourceURI:  types.StringValue(img.SourceURI),
+			AltText:    types.StringValue(img.AltText),
+			ContentURI: types.StringValue(img.ContentURI),
+		}
+		if img.Title != "" {
+			tf.Image.Title = types.StringValue(img.Title)
+		} else {
+			tf.Image.Title = types.StringNull()
+		}
+		if img.Description != "" {
+			tf.Image.Description = types.StringValue(img.Description)
+		} else {
+			tf.Image.Description = types.StringNull()
+		}
+	}
+
+	if item.Video != nil {
+		v := item.Video
+		tf.Video = &VideoModel{
+			YoutubeURI: types.StringValue(v.YoutubeURI),
+		}
+		if v.Title != "" {
+			tf.Video.Title = types.StringValue(v.Title)
+		} else {
+			tf.Video.Title = types.StringNull()
+		}
+		if v.Description != "" {
+			tf.Video.Description = types.StringValue(v.Description)
+		} else {
+			tf.Video.Description = types.StringNull()
+		}
+		if v.Caption != "" {
+			tf.Video.Caption = types.StringValue(v.Caption)
+		} else {
+			tf.Video.Caption = types.StringNull()
+		}
+	}
+
 	if item.SectionHeader != nil {
 		sh := item.SectionHeader
 		tf.SectionHeader = &SectionHeaderModel{
@@ -543,6 +619,23 @@ func itemObjectType() types.ObjectType {
 					"description": types.StringType,
 				},
 			},
+			"image": types.ObjectType{
+				AttrTypes: map[string]attr.Type{
+					"title":       types.StringType,
+					"description": types.StringType,
+					"source_uri":  types.StringType,
+					"alt_text":    types.StringType,
+					"content_uri": types.StringType,
+				},
+			},
+			"video": types.ObjectType{
+				AttrTypes: map[string]attr.Type{
+					"title":       types.StringType,
+					"description": types.StringType,
+					"youtube_uri": types.StringType,
+					"caption":     types.StringType,
+				},
+			},
 			"section_header": types.ObjectType{
 				AttrTypes: map[string]attr.Type{
 					"title":       types.StringType,
@@ -580,4 +673,58 @@ func filterItemsByKeyMap(items []convert.ItemModel, keyMap map[string]string) []
 		}
 	}
 	return out
+}
+
+func overlayConvertItemInputsFromTF(
+	ctx context.Context,
+	items []convert.ItemModel,
+	tfItems types.List,
+) ([]convert.ItemModel, diag.Diagnostics) {
+	var diags diag.Diagnostics
+	if tfItems.IsNull() || tfItems.IsUnknown() || len(tfItems.Elements()) == 0 || len(items) == 0 {
+		return items, diags
+	}
+
+	var models []ItemModel
+	diags.Append(tfItems.ElementsAs(ctx, &models, false)...)
+	if diags.HasError() {
+		return items, diags
+	}
+
+	byKey := make(map[string]ItemModel, len(models))
+	for _, it := range models {
+		k := it.ItemKey.ValueString()
+		if k != "" {
+			byKey[k] = it
+		}
+	}
+
+	for i := range items {
+		k := items[i].ItemKey
+		tf, ok := byKey[k]
+		if !ok {
+			continue
+		}
+
+		// The Forms API does not reliably return some input-only fields (notably
+		// Image.SourceUri). Preserve configured values from TF.
+		if items[i].Image != nil && tf.Image != nil {
+			if items[i].Image.SourceURI == "" && !tf.Image.SourceURI.IsNull() && !tf.Image.SourceURI.IsUnknown() {
+				items[i].Image.SourceURI = tf.Image.SourceURI.ValueString()
+			}
+			if items[i].Image.AltText == "" && !tf.Image.AltText.IsNull() && !tf.Image.AltText.IsUnknown() {
+				items[i].Image.AltText = tf.Image.AltText.ValueString()
+			}
+		}
+		if items[i].Video != nil && tf.Video != nil {
+			if items[i].Video.YoutubeURI == "" && !tf.Video.YoutubeURI.IsNull() && !tf.Video.YoutubeURI.IsUnknown() {
+				items[i].Video.YoutubeURI = tf.Video.YoutubeURI.ValueString()
+			}
+			if items[i].Video.Caption == "" && !tf.Video.Caption.IsNull() && !tf.Video.Caption.IsUnknown() {
+				items[i].Video.Caption = tf.Video.Caption.ValueString()
+			}
+		}
+	}
+
+	return items, diags
 }

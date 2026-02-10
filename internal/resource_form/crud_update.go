@@ -156,6 +156,14 @@ func (r *FormResource) Update(
 		formModel.Items = filterItemsByKeyMap(formModel.Items, keyMap)
 	}
 
+	// Preserve input-only fields that may not be returned by the API.
+	var overlayDiags diag.Diagnostics
+	formModel.Items, overlayDiags = overlayConvertItemInputsFromTF(ctx, formModel.Items, plan.Items)
+	resp.Diagnostics.Append(overlayDiags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
 	// Step 8: Convert to TF state and save.
 	newState := convertFormModelToTFState(formModel, plan)
 
@@ -355,6 +363,11 @@ func (r *FormResource) updateTargeted(
 	manageMode := "all"
 	if !plan.ManageMode.IsNull() && !plan.ManageMode.IsUnknown() && plan.ManageMode.ValueString() != "" {
 		manageMode = plan.ManageMode.ValueString()
+	}
+
+	partialNewItemPolicy := "append"
+	if !plan.PartialNewItemPolicy.IsNull() && !plan.PartialNewItemPolicy.IsUnknown() && plan.PartialNewItemPolicy.ValueString() != "" {
+		partialNewItemPolicy = plan.PartialNewItemPolicy.ValueString()
 	}
 
 	createdKeyMap := map[string]string{}
@@ -637,7 +650,7 @@ func (r *FormResource) updateTargeted(
 		}
 		// New item: in partial mode, append by default to avoid shifting unmanaged items.
 		insertIdx := i
-		if manageMode == "partial" {
+		if manageMode == "partial" && partialNewItemPolicy == "append" {
 			insertIdx = len(currentOrder)
 		}
 		req, err := convert.ItemModelToCreateRequest(desiredItems[i], insertIdx)

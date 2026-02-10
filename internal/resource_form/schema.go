@@ -26,7 +26,7 @@ func (r *FormResource) Schema(
 	resp *resource.SchemaResponse,
 ) {
 	resp.Schema = schema.Schema{
-		Description: "Manages a Google Form.",
+		Description: "Manages a Google Form. Note: some Forms item types are not supported by the API for creation (for example file upload questions). Use content_json as an escape hatch when needed.",
 		Attributes:  formAttributes(),
 		Blocks:      formBlocks(),
 	}
@@ -90,6 +90,17 @@ func formAttributes() map[string]schema.Attribute {
 			Description: "Management mode for items. 'all' treats the item list as authoritative for the whole form. 'partial' only manages the configured items (by item_key) and leaves other items untouched; in partial mode, new items are appended by default.",
 			Validators: []validator.String{
 				stringvalidator.OneOf("all", "partial"),
+			},
+		},
+		"partial_new_item_policy": schema.StringAttribute{
+			Optional: true,
+			Computed: true,
+			Default:  stringdefault.StaticString("append"),
+			Description: "Policy for placing newly created items when manage_mode = \"partial\". " +
+				"'append' (default) adds new managed items to the end of the form without shifting unmanaged items. " +
+				"'plan_index' inserts at the index specified by the plan's item list, which may shift unmanaged items.",
+			Validators: []validator.String{
+				stringvalidator.OneOf("append", "plan_index"),
 			},
 		},
 		"conflict_policy": schema.StringAttribute{
@@ -425,6 +436,55 @@ func itemBlocks() map[string]schema.Block {
 				"description": schema.StringAttribute{
 					Optional:    true,
 					Description: "Optional description shown to respondents.",
+				},
+			},
+		},
+		"image": schema.SingleNestedBlock{
+			Description: "An image item (non-question). Note: source_uri may not be returned by the API; the provider preserves the configured value in state for drift-free plans.",
+			Attributes: map[string]schema.Attribute{
+				"title": schema.StringAttribute{
+					Optional:    true,
+					Description: "Optional item title shown above the image.",
+				},
+				"description": schema.StringAttribute{
+					Optional:    true,
+					Description: "Optional item description shown above the image.",
+				},
+				"source_uri": schema.StringAttribute{
+					Required:    true,
+					Description: "Input-only. The source URI used to insert the image.",
+				},
+				"alt_text": schema.StringAttribute{
+					Optional:    true,
+					Description: "Optional alt text read by screen readers.",
+				},
+				"content_uri": schema.StringAttribute{
+					Computed:    true,
+					Description: "Output-only. Temporary download URI returned by the API.",
+					PlanModifiers: []planmodifier.String{
+						stringplanmodifier.UseStateForUnknown(),
+					},
+				},
+			},
+		},
+		"video": schema.SingleNestedBlock{
+			Description: "A video item (non-question).",
+			Attributes: map[string]schema.Attribute{
+				"title": schema.StringAttribute{
+					Optional:    true,
+					Description: "Optional item title shown above the video.",
+				},
+				"description": schema.StringAttribute{
+					Optional:    true,
+					Description: "Optional item description shown above the video.",
+				},
+				"youtube_uri": schema.StringAttribute{
+					Required:    true,
+					Description: "Required. A YouTube URI.",
+				},
+				"caption": schema.StringAttribute{
+					Optional:    true,
+					Description: "Optional caption displayed below the video.",
 				},
 			},
 		},

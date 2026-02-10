@@ -223,6 +223,13 @@ func (r *FormResource) Create(
 		return
 	}
 
+	// Preserve input-only fields that may not be returned by the API.
+	formModel.Items, diags = overlayConvertItemInputsFromTF(ctx, formModel.Items, plan.Items)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
 	state := convertFormModelToTFState(formModel, plan)
 
 	// Set items in state (unless using content_json mode).

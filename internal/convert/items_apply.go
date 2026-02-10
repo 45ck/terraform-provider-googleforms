@@ -387,6 +387,35 @@ func ApplyItemModelToExistingItem(existing *forms.Item, desired ItemModel) (bool
 		existing.ImageItem = nil
 		existing.VideoItem = nil
 
+	case desired.Image != nil:
+		if existing.ImageItem == nil || existing.ImageItem.Image == nil {
+			return true, nil
+		}
+		existing.Title = desired.Image.Title
+		existing.Description = desired.Image.Description
+		// contentUri is output-only; preserve it by only updating inputs.
+		existing.ImageItem.Image.SourceUri = desired.Image.SourceURI
+		existing.ImageItem.Image.AltText = desired.Image.AltText
+		existing.QuestionItem = nil
+		existing.QuestionGroupItem = nil
+		existing.TextItem = nil
+		existing.VideoItem = nil
+		existing.PageBreakItem = nil
+
+	case desired.Video != nil:
+		if existing.VideoItem == nil || existing.VideoItem.Video == nil {
+			return true, nil
+		}
+		existing.Title = desired.Video.Title
+		existing.Description = desired.Video.Description
+		existing.VideoItem.Caption = desired.Video.Caption
+		existing.VideoItem.Video.YoutubeUri = desired.Video.YoutubeURI
+		existing.QuestionItem = nil
+		existing.QuestionGroupItem = nil
+		existing.TextItem = nil
+		existing.ImageItem = nil
+		existing.PageBreakItem = nil
+
 	default:
 		return true, fmt.Errorf("desired item has no supported question block")
 	}

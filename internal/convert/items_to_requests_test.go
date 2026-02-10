@@ -345,6 +345,94 @@ func TestTextItemToRequest_Basic(t *testing.T) {
 }
 
 // ---------------------------------------------------------------------------
+// ItemModelToCreateRequest - image
+// ---------------------------------------------------------------------------
+
+func TestImageToRequest_Basic(t *testing.T) {
+	t.Parallel()
+	item := ItemModel{
+		Image: &ImageBlock{
+			Title:       "Logo",
+			Description: "Company logo",
+			SourceURI:   "https://example.com/logo.png",
+			AltText:     "Logo",
+		},
+	}
+
+	req, err := ItemModelToCreateRequest(item, 0)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	ci := req.CreateItem
+	if ci == nil {
+		t.Fatal("expected CreateItem")
+	}
+	if ci.Item.ImageItem == nil || ci.Item.ImageItem.Image == nil {
+		t.Fatal("expected ImageItem.Image")
+	}
+	if ci.Item.ImageItem.Image.SourceUri != "https://example.com/logo.png" {
+		t.Errorf("source_uri=%q, want expected", ci.Item.ImageItem.Image.SourceUri)
+	}
+	if ci.Item.ImageItem.Image.AltText != "Logo" {
+		t.Errorf("alt_text=%q, want Logo", ci.Item.ImageItem.Image.AltText)
+	}
+	if ci.Item.Title != "Logo" {
+		t.Errorf("title=%q, want Logo", ci.Item.Title)
+	}
+	if ci.Item.Description != "Company logo" {
+		t.Errorf("description=%q, want expected", ci.Item.Description)
+	}
+	if ci.Item.QuestionItem != nil {
+		t.Fatal("expected QuestionItem to be nil for image")
+	}
+}
+
+// ---------------------------------------------------------------------------
+// ItemModelToCreateRequest - video
+// ---------------------------------------------------------------------------
+
+func TestVideoToRequest_Basic(t *testing.T) {
+	t.Parallel()
+	item := ItemModel{
+		Video: &VideoBlock{
+			Title:       "Intro",
+			Description: "Watch this",
+			YoutubeURI:  "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+			Caption:     "Intro video",
+		},
+	}
+
+	req, err := ItemModelToCreateRequest(item, 0)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	ci := req.CreateItem
+	if ci == nil {
+		t.Fatal("expected CreateItem")
+	}
+	if ci.Item.VideoItem == nil || ci.Item.VideoItem.Video == nil {
+		t.Fatal("expected VideoItem.Video")
+	}
+	if ci.Item.VideoItem.Video.YoutubeUri != "https://www.youtube.com/watch?v=dQw4w9WgXcQ" {
+		t.Errorf("youtube_uri=%q, want expected", ci.Item.VideoItem.Video.YoutubeUri)
+	}
+	if ci.Item.VideoItem.Caption != "Intro video" {
+		t.Errorf("caption=%q, want expected", ci.Item.VideoItem.Caption)
+	}
+	if ci.Item.Title != "Intro" {
+		t.Errorf("title=%q, want Intro", ci.Item.Title)
+	}
+	if ci.Item.Description != "Watch this" {
+		t.Errorf("description=%q, want expected", ci.Item.Description)
+	}
+	if ci.Item.QuestionItem != nil {
+		t.Fatal("expected QuestionItem to be nil for video")
+	}
+}
+
+// ---------------------------------------------------------------------------
 // ItemsToCreateRequests
 // ---------------------------------------------------------------------------
 

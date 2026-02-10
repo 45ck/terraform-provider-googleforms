@@ -73,6 +73,13 @@ func (r *FormResource) Read(
 		formModel.Items = filterItemsByKeyMap(formModel.Items, keyMap)
 	}
 
+	// Preserve input-only fields that may not be returned by the API.
+	formModel.Items, diags = overlayConvertItemInputsFromTF(ctx, formModel.Items, state.Items)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
 	// Step 5: Map to Terraform state, preserving plan/config values.
 	newState := convertFormModelToTFState(formModel, state)
 

@@ -72,6 +72,27 @@ func FormItemToItemModel(item *forms.Item, itemKey string) (*ItemModel, error) {
 		return model, nil
 	}
 
+	if item.ImageItem != nil && item.ImageItem.Image != nil {
+		model.Image = &ImageBlock{
+			Title:       item.Title,
+			Description: item.Description,
+			SourceURI:   item.ImageItem.Image.SourceUri,
+			AltText:     item.ImageItem.Image.AltText,
+			ContentURI:  item.ImageItem.Image.ContentUri,
+		}
+		return model, nil
+	}
+
+	if item.VideoItem != nil && item.VideoItem.Video != nil {
+		model.Video = &VideoBlock{
+			Title:       item.Title,
+			Description: item.Description,
+			YoutubeURI:  item.VideoItem.Video.YoutubeUri,
+			Caption:     item.VideoItem.Caption,
+		}
+		return model, nil
+	}
+
 	// Section headers / page breaks have no QuestionItem.
 	if item.PageBreakItem != nil {
 		model.SectionHeader = &SectionHeaderBlock{

@@ -40,6 +40,10 @@ func ItemModelToCreateRequest(item ItemModel, index int) (*forms.Request, error)
 		buildRating(formItem, item.Rating)
 	case item.TextItem != nil:
 		buildTextItem(formItem, item.TextItem)
+	case item.Image != nil:
+		buildImage(formItem, item.Image)
+	case item.Video != nil:
+		buildVideo(formItem, item.Video)
 	case item.SectionHeader != nil:
 		buildSectionHeader(formItem, item.SectionHeader)
 	default:
@@ -194,6 +198,40 @@ func buildTextItem(fi *forms.Item, t *TextItemBlock) {
 	fi.TextItem = &forms.TextItem{}
 	fi.QuestionItem = nil
 	fi.PageBreakItem = nil
+}
+
+// buildImage populates a forms.Item as an image item.
+func buildImage(fi *forms.Item, img *ImageBlock) {
+	fi.Title = img.Title
+	fi.Description = img.Description
+	fi.ImageItem = &forms.ImageItem{
+		Image: &forms.Image{
+			SourceUri: img.SourceURI,
+			AltText:   img.AltText,
+		},
+	}
+	fi.QuestionItem = nil
+	fi.TextItem = nil
+	fi.PageBreakItem = nil
+	fi.VideoItem = nil
+	fi.QuestionGroupItem = nil
+}
+
+// buildVideo populates a forms.Item as a video item.
+func buildVideo(fi *forms.Item, v *VideoBlock) {
+	fi.Title = v.Title
+	fi.Description = v.Description
+	fi.VideoItem = &forms.VideoItem{
+		Caption: v.Caption,
+		Video: &forms.Video{
+			YoutubeUri: v.YoutubeURI,
+		},
+	}
+	fi.QuestionItem = nil
+	fi.TextItem = nil
+	fi.PageBreakItem = nil
+	fi.ImageItem = nil
+	fi.QuestionGroupItem = nil
 }
 
 // buildSectionHeader populates a forms.Item as a section header.

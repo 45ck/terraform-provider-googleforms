@@ -8,22 +8,23 @@ import "github.com/hashicorp/terraform-plugin-framework/types"
 
 // FormResourceModel describes the Terraform state for googleforms_form.
 type FormResourceModel struct {
-	ID                  types.String `tfsdk:"id"`
-	Title               types.String `tfsdk:"title"`
-	Description         types.String `tfsdk:"description"`
-	Published           types.Bool   `tfsdk:"published"`
-	AcceptingResponses  types.Bool   `tfsdk:"accepting_responses"`
-	Quiz                types.Bool   `tfsdk:"quiz"`
-	UpdateStrategy      types.String `tfsdk:"update_strategy"`
-	DangerousReplaceAll types.Bool   `tfsdk:"dangerously_replace_all_items"`
-	ManageMode          types.String `tfsdk:"manage_mode"`
-	ConflictPolicy      types.String `tfsdk:"conflict_policy"`
-	Items               types.List   `tfsdk:"item"`
-	ContentJSON         types.String `tfsdk:"content_json"`
-	ResponderURI        types.String `tfsdk:"responder_uri"`
-	EditURI             types.String `tfsdk:"edit_uri"`
-	DocumentTitle       types.String `tfsdk:"document_title"`
-	RevisionID          types.String `tfsdk:"revision_id"`
+	ID                   types.String `tfsdk:"id"`
+	Title                types.String `tfsdk:"title"`
+	Description          types.String `tfsdk:"description"`
+	Published            types.Bool   `tfsdk:"published"`
+	AcceptingResponses   types.Bool   `tfsdk:"accepting_responses"`
+	Quiz                 types.Bool   `tfsdk:"quiz"`
+	UpdateStrategy       types.String `tfsdk:"update_strategy"`
+	DangerousReplaceAll  types.Bool   `tfsdk:"dangerously_replace_all_items"`
+	ManageMode           types.String `tfsdk:"manage_mode"`
+	PartialNewItemPolicy types.String `tfsdk:"partial_new_item_policy"`
+	ConflictPolicy       types.String `tfsdk:"conflict_policy"`
+	Items                types.List   `tfsdk:"item"`
+	ContentJSON          types.String `tfsdk:"content_json"`
+	ResponderURI         types.String `tfsdk:"responder_uri"`
+	EditURI              types.String `tfsdk:"edit_uri"`
+	DocumentTitle        types.String `tfsdk:"document_title"`
+	RevisionID           types.String `tfsdk:"revision_id"`
 }
 
 // ItemModel describes a single form item in Terraform state.
@@ -40,6 +41,8 @@ type ItemModel struct {
 	Time           *TimeModel           `tfsdk:"time"`
 	Rating         *RatingModel         `tfsdk:"rating"`
 	TextItem       *TextItemModel       `tfsdk:"text_item"`
+	Image          *ImageModel          `tfsdk:"image"`
+	Video          *VideoModel          `tfsdk:"video"`
 	SectionHeader  *SectionHeaderModel  `tfsdk:"section_header"`
 	GoogleItemID   types.String         `tfsdk:"google_item_id"`
 }
@@ -125,6 +128,23 @@ type RatingModel struct {
 type TextItemModel struct {
 	Title       types.String `tfsdk:"title"`
 	Description types.String `tfsdk:"description"`
+}
+
+// ImageModel describes an image item.
+type ImageModel struct {
+	Title       types.String `tfsdk:"title"`
+	Description types.String `tfsdk:"description"`
+	SourceURI   types.String `tfsdk:"source_uri"`
+	AltText     types.String `tfsdk:"alt_text"`
+	ContentURI  types.String `tfsdk:"content_uri"`
+}
+
+// VideoModel describes a video item.
+type VideoModel struct {
+	Title       types.String `tfsdk:"title"`
+	Description types.String `tfsdk:"description"`
+	YoutubeURI  types.String `tfsdk:"youtube_uri"`
+	Caption     types.String `tfsdk:"caption"`
 }
 
 // SectionHeaderModel describes a section header / page break.

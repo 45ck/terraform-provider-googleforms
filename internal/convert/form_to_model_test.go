@@ -391,6 +391,86 @@ func TestFormToModel_WithRatingQuestion(t *testing.T) {
 	}
 }
 
+func TestFormToModel_WithImageItem(t *testing.T) {
+	form := &forms.Form{
+		FormId: "form-img",
+		Info:   &forms.Info{Title: "Img"},
+		Items: []*forms.Item{
+			{
+				ItemId:      "item-img1",
+				Title:       "Logo",
+				Description: "Company logo",
+				ImageItem: &forms.ImageItem{
+					Image: &forms.Image{
+						SourceUri:  "https://example.com/logo.png",
+						AltText:    "Logo",
+						ContentUri: "https://download.example.com/tmp",
+					},
+				},
+			},
+		},
+	}
+
+	model, err := FormToModel(form, nil)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(model.Items) != 1 {
+		t.Fatalf("items count = %d, want 1", len(model.Items))
+	}
+	it := model.Items[0]
+	if it.Image == nil {
+		t.Fatal("expected Image to be set")
+	}
+	if it.Image.SourceURI != "https://example.com/logo.png" {
+		t.Errorf("SourceURI=%q, want expected", it.Image.SourceURI)
+	}
+	if it.Image.AltText != "Logo" {
+		t.Errorf("AltText=%q, want Logo", it.Image.AltText)
+	}
+	if it.Image.ContentURI != "https://download.example.com/tmp" {
+		t.Errorf("ContentURI=%q, want expected", it.Image.ContentURI)
+	}
+}
+
+func TestFormToModel_WithVideoItem(t *testing.T) {
+	form := &forms.Form{
+		FormId: "form-vid",
+		Info:   &forms.Info{Title: "Vid"},
+		Items: []*forms.Item{
+			{
+				ItemId:      "item-vid1",
+				Title:       "Intro",
+				Description: "Watch this",
+				VideoItem: &forms.VideoItem{
+					Caption: "Intro video",
+					Video: &forms.Video{
+						YoutubeUri: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+					},
+				},
+			},
+		},
+	}
+
+	model, err := FormToModel(form, nil)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(model.Items) != 1 {
+		t.Fatalf("items count = %d, want 1", len(model.Items))
+	}
+	it := model.Items[0]
+	if it.Video == nil {
+		t.Fatal("expected Video to be set")
+	}
+	if it.Video.YoutubeURI != "https://www.youtube.com/watch?v=dQw4w9WgXcQ" {
+		t.Errorf("YoutubeURI=%q, want expected", it.Video.YoutubeURI)
+	}
+	if it.Video.Caption != "Intro video" {
+		t.Errorf("Caption=%q, want expected", it.Video.Caption)
+	}
+}
+
 func TestFormToModel_MultipleItems_PreservesOrder(t *testing.T) {
 	form := &forms.Form{
 		FormId: "form-multi",

@@ -21,6 +21,8 @@ type ItemModel struct {
 	Time           *TimeBlock
 	Rating         *RatingBlock
 	TextItem       *TextItemBlock
+	Image          *ImageBlock
+	Video          *VideoBlock
 	SectionHeader  *SectionHeaderBlock
 }
 
@@ -105,6 +107,23 @@ type RatingBlock struct {
 type TextItemBlock struct {
 	Title       string
 	Description string
+}
+
+// ImageBlock describes an image item (non-question).
+type ImageBlock struct {
+	Title       string
+	Description string
+	SourceURI   string
+	AltText     string
+	ContentURI  string
+}
+
+// VideoBlock describes a video item (non-question).
+type VideoBlock struct {
+	Title       string
+	Description string
+	YoutubeURI  string
+	Caption     string
 }
 
 // SectionHeaderBlock describes a section break / page header.

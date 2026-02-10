@@ -3,12 +3,12 @@
 page_title: "googleforms_form Resource - googleforms"
 subcategory: ""
 description: |-
-  Manages a Google Form.
+  Manages a Google Form. Note: some Forms item types are not supported by the API for creation (for example file upload questions). Use content_json as an escape hatch when needed.
 ---
 
 # googleforms_form (Resource)
 
-Manages a Google Form.
+Manages a Google Form. Note: some Forms item types are not supported by the API for creation (for example file upload questions). Use content_json as an escape hatch when needed.
 
 
 
@@ -28,6 +28,7 @@ Manages a Google Form.
 - `description` (String) The form description.
 - `item` (Block List) A form item (question). Each item requires a unique item_key and exactly one question type sub-block. (see [below for nested schema](#nestedblock--item))
 - `manage_mode` (String) Management mode for items. 'all' treats the item list as authoritative for the whole form. 'partial' only manages the configured items (by item_key) and leaves other items untouched; in partial mode, new items are appended by default.
+- `partial_new_item_policy` (String) Policy for placing newly created items when manage_mode = "partial". 'append' (default) adds new managed items to the end of the form without shifting unmanaged items. 'plan_index' inserts at the index specified by the plan's item list, which may shift unmanaged items.
 - `published` (Boolean) Whether the form is published. Must be true before accepting_responses can be true.
 - `quiz` (Boolean) Enable quiz mode with grading.
 - `update_strategy` (String) Update strategy for form items. 'replace_all' deletes and recreates all items on changes. 'targeted' applies deletes/moves/updates/creates using batchUpdate when item_keys are already correlated to google_item_id in state; it refuses question type changes and does not support content_json.
@@ -53,6 +54,7 @@ Optional:
 - `date` (Block, Optional) A date question (no time component). (see [below for nested schema](#nestedblock--item--date))
 - `date_time` (Block, Optional) A date and time question. (see [below for nested schema](#nestedblock--item--date_time))
 - `dropdown` (Block, Optional) A dropdown (select) question. (see [below for nested schema](#nestedblock--item--dropdown))
+- `image` (Block, Optional) An image item (non-question). Note: source_uri may not be returned by the API; the provider preserves the configured value in state for drift-free plans. (see [below for nested schema](#nestedblock--item--image))
 - `multiple_choice` (Block, Optional) A multiple choice (radio button) question. (see [below for nested schema](#nestedblock--item--multiple_choice))
 - `paragraph` (Block, Optional) A paragraph (multi-line text) question. (see [below for nested schema](#nestedblock--item--paragraph))
 - `rating` (Block, Optional) A rating question (stars/hearts/thumbs). (see [below for nested schema](#nestedblock--item--rating))
@@ -61,6 +63,7 @@ Optional:
 - `short_answer` (Block, Optional) A short answer (single-line text) question. (see [below for nested schema](#nestedblock--item--short_answer))
 - `text_item` (Block, Optional) A text-only item (no question). (see [below for nested schema](#nestedblock--item--text_item))
 - `time` (Block, Optional) A time or duration question. (see [below for nested schema](#nestedblock--item--time))
+- `video` (Block, Optional) A video item (non-question). (see [below for nested schema](#nestedblock--item--video))
 
 Read-Only:
 
@@ -146,6 +149,24 @@ Optional:
 - `feedback_correct` (String) Feedback shown when the answer is correct.
 - `feedback_incorrect` (String) Feedback shown when the answer is incorrect.
 
+
+
+<a id="nestedblock--item--image"></a>
+### Nested Schema for `item.image`
+
+Required:
+
+- `source_uri` (String) Input-only. The source URI used to insert the image.
+
+Optional:
+
+- `alt_text` (String) Optional alt text read by screen readers.
+- `description` (String) Optional item description shown above the image.
+- `title` (String) Optional item title shown above the image.
+
+Read-Only:
+
+- `content_uri` (String) Output-only. Temporary download URI returned by the API.
 
 
 <a id="nestedblock--item--multiple_choice"></a>
@@ -295,3 +316,17 @@ Optional:
 
 - `duration` (Boolean) If true, the question is an elapsed time duration. Otherwise it is a time of day.
 - `required` (Boolean) Whether the question is required.
+
+
+<a id="nestedblock--item--video"></a>
+### Nested Schema for `item.video`
+
+Required:
+
+- `youtube_uri` (String) Required. A YouTube URI.
+
+Optional:
+
+- `caption` (String) Optional caption displayed below the video.
+- `description` (String) Optional item description shown above the video.
+- `title` (String) Optional item title shown above the video.
