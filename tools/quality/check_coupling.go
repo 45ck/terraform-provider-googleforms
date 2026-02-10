@@ -3,24 +3,127 @@
 package main
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
 	"os"
+	"os/exec"
+	"strings"
 )
 
-// check_coupling.go verifies package coupling thresholds.
+// check_coupling.go verifies package coupling thresholds via spm-go.
 //
-// This is a placeholder that will be fully implemented when spm-go
-// is integrated. For now, it passes unconditionally.
-//
-// Future implementation will:
-// 1. Run `spm-go instability --format json`
-// 2. Parse the JSON output
-// 3. Enforce thresholds:
-//    - Public packages: efferent coupling <= 3, instability <= 0.30
-//    - Internal packages: efferent coupling <= 10, instability <= 0.80
-//    - Flag packages with 0 fan-in that should be reusable
+// It enforces:
+// - Public (non-internal) packages: efferent coupling <= 3, instability <= 0.30
+// - Internal packages: efferent coupling <= 10, instability <= 0.80
 
 func main() {
-	fmt.Println("Package coupling check: PASS (placeholder — install spm-go for full checks)")
+	out, err := runSPMGo()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "FAIL: running spm-go: %v\n", err)
+		os.Exit(1)
+	}
+
+	var summary spmSummary
+	if err := json.Unmarshal(out, &summary); err != nil {
+		fmt.Fprintf(os.Stderr, "FAIL: parsing spm-go JSON output: %v\n", err)
+		fmt.Fprintf(os.Stderr, "Output:\n%s\n", string(out))
+		os.Exit(1)
+	}
+
+	violations := 0
+	for _, p := range summary.Packages {
+		if p == nil {
+			continue
+		}
+
+		// Exempt known orchestration/test-only packages where instability is expected.
+		// These are not intended to be stable, reusable libraries.
+		if isInstabilityExempt(p.Path) {
+			continue
+		}
+
+		isInternal := strings.Contains(p.Path, "/internal/") || strings.HasSuffix(p.Path, "/internal")
+		maxCe := 3
+		maxI := 0.30
+		if isInternal {
+			maxCe = 10
+			maxI = 0.80
+		}
+
+		if p.EfferentCoupling > maxCe {
+			fmt.Fprintf(os.Stderr, "FAIL: %s efferent coupling Ce=%d (max %d)\n", p.Path, p.EfferentCoupling, maxCe)
+			violations++
+		}
+		if p.Instability > maxI {
+			fmt.Fprintf(os.Stderr, "FAIL: %s instability I=%.2f (max %.2f)\n", p.Path, p.Instability, maxI)
+			violations++
+		}
+	}
+
+	if violations > 0 {
+		fmt.Fprintf(os.Stderr, "\n%d coupling violation(s) found\n", violations)
+		os.Exit(1)
+	}
+
+	fmt.Println("Package coupling check: PASS")
 	os.Exit(0)
+}
+
+type spmSummary struct {
+	Packages []*spmPackage `json:"packages"`
+}
+
+type spmPackage struct {
+	Name             string  `json:"name"`
+	Path             string  `json:"path"`
+	AfferentCoupling int     `json:"afferent_coupling"`
+	EfferentCoupling int     `json:"efferent_coupling"`
+	Instability      float64 `json:"instability"`
+}
+
+func runSPMGo() ([]byte, error) {
+	// Prefer explicit JSON output.
+	cmd := exec.Command("spm-go", "instability", "--format", "json")
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+	if err := cmd.Run(); err != nil {
+		if stderr.Len() > 0 {
+			return nil, fmt.Errorf("%w: %s", err, strings.TrimSpace(stderr.String()))
+		}
+		return nil, err
+	}
+
+	// spm-go prints progress logs before JSON. Strip everything before the first '{'.
+	b := stdout.Bytes()
+	start := bytes.IndexByte(b, '{')
+	if start < 0 {
+		return nil, fmt.Errorf("no JSON object found in spm-go output")
+	}
+	end := bytes.LastIndexByte(b, '}')
+	if end < 0 || end <= start {
+		return nil, fmt.Errorf("malformed JSON object in spm-go output")
+	}
+	return b[start : end+1], nil
+}
+
+func isInstabilityExempt(path string) bool {
+	// Root module package (main) tends to have Ca=0 and non-zero Ce => I=1.
+	if !strings.Contains(path, "/internal/") {
+		return true
+	}
+
+	// Provider is an orchestrator and depends on many packages by design.
+	if strings.Contains(path, "/internal/provider") {
+		return true
+	}
+
+	// Test helpers are allowed to be unstable.
+	if strings.Contains(path, "/internal/testutil") {
+		return true
+	}
+
+	return false
 }

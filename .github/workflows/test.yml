@@ -106,6 +106,8 @@ jobs:
         with:
           go-version-file: go.mod
           cache: true
+      - name: Install spm-go
+        run: go install github.com/fdaines/spm-go@latest
       - name: Check coupling thresholds
         run: go run ./tools/quality/check_coupling.go
 
@@ -132,9 +134,12 @@ jobs:
         with:
           go-version-file: go.mod
           cache: true
+      - uses: hashicorp/setup-terraform@v3
       - name: Install tfplugindocs
         run: go install github.com/hashicorp/terraform-plugin-docs/cmd/tfplugindocs@latest
-      - name: Validate docs
+      - name: Generate docs
         run: |
-          tfplugindocs validate || true
-          echo "Docs validation complete"
+          tfplugindocs generate --provider-name googleforms
+          git diff --exit-code
+      - name: Validate docs
+        run: tfplugindocs validate --provider-name googleforms
