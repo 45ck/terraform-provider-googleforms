@@ -166,7 +166,7 @@ func (v UniqueItemKeyValidator) ValidateResource(
 // ---------------------------------------------------------------------------
 
 // ExactlyOneSubBlockValidator ensures each item has exactly one question type
-// sub-block (multiple_choice, short_answer, or paragraph).
+// sub-block.
 type ExactlyOneSubBlockValidator struct{}
 
 func (v ExactlyOneSubBlockValidator) Description(_ context.Context) string {
@@ -207,7 +207,7 @@ func (v ExactlyOneSubBlockValidator) ValidateResource(
 				"Invalid Item Configuration",
 				fmt.Sprintf(
 					"Item %s must have exactly one question type "+
-						"(multiple_choice, short_answer, paragraph, dropdown, checkbox, date, date_time, scale, or section_header), but has %d.",
+						"(multiple_choice, short_answer, paragraph, dropdown, checkbox, date, date_time, scale, time, rating, text_item, or section_header), but has %d.",
 					identity, count,
 				),
 			)
@@ -241,6 +241,15 @@ func countSubBlocks(item ItemModel) int {
 		count++
 	}
 	if item.Scale != nil {
+		count++
+	}
+	if item.Time != nil {
+		count++
+	}
+	if item.Rating != nil {
+		count++
+	}
+	if item.TextItem != nil {
 		count++
 	}
 	if item.SectionHeader != nil {

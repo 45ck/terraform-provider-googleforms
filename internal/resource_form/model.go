@@ -16,11 +16,14 @@ type FormResourceModel struct {
 	Quiz                types.Bool   `tfsdk:"quiz"`
 	UpdateStrategy      types.String `tfsdk:"update_strategy"`
 	DangerousReplaceAll types.Bool   `tfsdk:"dangerously_replace_all_items"`
+	ManageMode          types.String `tfsdk:"manage_mode"`
+	ConflictPolicy      types.String `tfsdk:"conflict_policy"`
 	Items               types.List   `tfsdk:"item"`
 	ContentJSON         types.String `tfsdk:"content_json"`
 	ResponderURI        types.String `tfsdk:"responder_uri"`
 	EditURI             types.String `tfsdk:"edit_uri"`
 	DocumentTitle       types.String `tfsdk:"document_title"`
+	RevisionID          types.String `tfsdk:"revision_id"`
 }
 
 // ItemModel describes a single form item in Terraform state.
@@ -34,6 +37,9 @@ type ItemModel struct {
 	Date           *DateModel           `tfsdk:"date"`
 	DateTime       *DateTimeModel       `tfsdk:"date_time"`
 	Scale          *ScaleModel          `tfsdk:"scale"`
+	Time           *TimeModel           `tfsdk:"time"`
+	Rating         *RatingModel         `tfsdk:"rating"`
+	TextItem       *TextItemModel       `tfsdk:"text_item"`
 	SectionHeader  *SectionHeaderModel  `tfsdk:"section_header"`
 	GoogleItemID   types.String         `tfsdk:"google_item_id"`
 }
@@ -98,6 +104,27 @@ type ScaleModel struct {
 	High         types.Int64  `tfsdk:"high"`
 	LowLabel     types.String `tfsdk:"low_label"`
 	HighLabel    types.String `tfsdk:"high_label"`
+}
+
+// TimeModel describes a time or duration question.
+type TimeModel struct {
+	QuestionText types.String `tfsdk:"question_text"`
+	Required     types.Bool   `tfsdk:"required"`
+	Duration     types.Bool   `tfsdk:"duration"`
+}
+
+// RatingModel describes a rating question.
+type RatingModel struct {
+	QuestionText     types.String `tfsdk:"question_text"`
+	Required         types.Bool   `tfsdk:"required"`
+	IconType         types.String `tfsdk:"icon_type"`
+	RatingScaleLevel types.Int64  `tfsdk:"rating_scale_level"`
+}
+
+// TextItemModel describes a text-only item (no question).
+type TextItemModel struct {
+	Title       types.String `tfsdk:"title"`
+	Description types.String `tfsdk:"description"`
 }
 
 // SectionHeaderModel describes a section header / page break.

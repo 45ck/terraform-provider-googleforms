@@ -34,6 +34,12 @@ func ItemModelToCreateRequest(item ItemModel, index int) (*forms.Request, error)
 		buildDateTime(formItem, item.DateTime)
 	case item.Scale != nil:
 		buildScale(formItem, item.Scale)
+	case item.Time != nil:
+		buildTime(formItem, item.Time)
+	case item.Rating != nil:
+		buildRating(formItem, item.Rating)
+	case item.TextItem != nil:
+		buildTextItem(formItem, item.TextItem)
 	case item.SectionHeader != nil:
 		buildSectionHeader(formItem, item.SectionHeader)
 	default:
@@ -160,12 +166,42 @@ func buildScale(fi *forms.Item, s *ScaleBlock) {
 	fi.QuestionItem = &forms.QuestionItem{Question: q}
 }
 
+// buildTime populates a forms.Item with a TimeQuestion.
+func buildTime(fi *forms.Item, t *TimeBlock) {
+	q := &forms.Question{
+		Required:     t.Required,
+		TimeQuestion: &forms.TimeQuestion{Duration: t.Duration},
+	}
+	fi.QuestionItem = &forms.QuestionItem{Question: q}
+}
+
+// buildRating populates a forms.Item with a RatingQuestion.
+func buildRating(fi *forms.Item, r *RatingBlock) {
+	q := &forms.Question{
+		Required: r.Required,
+		RatingQuestion: &forms.RatingQuestion{
+			IconType:         r.IconType,
+			RatingScaleLevel: r.RatingScaleLevel,
+		},
+	}
+	fi.QuestionItem = &forms.QuestionItem{Question: q}
+}
+
+// buildTextItem populates a forms.Item as a text-only item.
+func buildTextItem(fi *forms.Item, t *TextItemBlock) {
+	fi.Title = t.Title
+	fi.Description = t.Description
+	fi.TextItem = &forms.TextItem{}
+	fi.QuestionItem = nil
+	fi.PageBreakItem = nil
+}
+
 // buildSectionHeader populates a forms.Item as a section header.
 // Section headers have Title and Description but no QuestionItem.
 func buildSectionHeader(fi *forms.Item, sh *SectionHeaderBlock) {
 	fi.Title = sh.Title
 	fi.Description = sh.Description
-	// No QuestionItem — this creates a page break / section header.
+	// No QuestionItem - this creates a page break / section header.
 	fi.PageBreakItem = &forms.PageBreakItem{}
 }
 

@@ -11,7 +11,7 @@ import (
 )
 
 // ---------------------------------------------------------------------------
-// ItemModelToCreateRequest — multiple_choice
+// ItemModelToCreateRequest - multiple_choice
 // ---------------------------------------------------------------------------
 
 func TestMultipleChoiceToRequest_Basic(t *testing.T) {
@@ -124,7 +124,7 @@ func TestMultipleChoiceToRequest_Required(t *testing.T) {
 }
 
 // ---------------------------------------------------------------------------
-// ItemModelToCreateRequest — short_answer
+// ItemModelToCreateRequest - short_answer
 // ---------------------------------------------------------------------------
 
 func TestShortAnswerToRequest_Basic(t *testing.T) {
@@ -185,7 +185,7 @@ func TestShortAnswerToRequest_WithGrading(t *testing.T) {
 }
 
 // ---------------------------------------------------------------------------
-// ItemModelToCreateRequest — paragraph
+// ItemModelToCreateRequest - paragraph
 // ---------------------------------------------------------------------------
 
 func TestParagraphToRequest_Basic(t *testing.T) {
@@ -239,6 +239,108 @@ func TestParagraphToRequest_WithGrading(t *testing.T) {
 	}
 	if g.WhenWrong == nil || g.WhenWrong.Text != "Needs more detail." {
 		t.Errorf("feedback_incorrect = %v, want 'Needs more detail.'", g.WhenWrong)
+	}
+}
+
+// ---------------------------------------------------------------------------
+// ItemModelToCreateRequest - time
+// ---------------------------------------------------------------------------
+
+func TestTimeToRequest_Basic(t *testing.T) {
+	t.Parallel()
+	item := ItemModel{
+		Title: "How long?",
+		Time: &TimeBlock{
+			Required: true,
+			Duration: true,
+		},
+	}
+
+	req, err := ItemModelToCreateRequest(item, 0)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	q := req.CreateItem.Item.QuestionItem.Question
+	if q.TimeQuestion == nil {
+		t.Fatal("expected TimeQuestion")
+	}
+	if !q.Required {
+		t.Error("expected Required=true")
+	}
+	if !q.TimeQuestion.Duration {
+		t.Error("expected Duration=true")
+	}
+}
+
+// ---------------------------------------------------------------------------
+// ItemModelToCreateRequest - rating
+// ---------------------------------------------------------------------------
+
+func TestRatingToRequest_Basic(t *testing.T) {
+	t.Parallel()
+	item := ItemModel{
+		Title: "Rate us",
+		Rating: &RatingBlock{
+			Required:         true,
+			IconType:         "STAR",
+			RatingScaleLevel: 5,
+		},
+	}
+
+	req, err := ItemModelToCreateRequest(item, 0)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	q := req.CreateItem.Item.QuestionItem.Question
+	if q.RatingQuestion == nil {
+		t.Fatal("expected RatingQuestion")
+	}
+	if !q.Required {
+		t.Error("expected Required=true")
+	}
+	if q.RatingQuestion.IconType != "STAR" {
+		t.Errorf("icon_type=%q, want STAR", q.RatingQuestion.IconType)
+	}
+	if q.RatingQuestion.RatingScaleLevel != 5 {
+		t.Errorf("rating_scale_level=%d, want 5", q.RatingQuestion.RatingScaleLevel)
+	}
+}
+
+// ---------------------------------------------------------------------------
+// ItemModelToCreateRequest - text_item
+// ---------------------------------------------------------------------------
+
+func TestTextItemToRequest_Basic(t *testing.T) {
+	t.Parallel()
+	item := ItemModel{
+		TextItem: &TextItemBlock{
+			Title:       "Welcome",
+			Description: "Please answer the questions below.",
+		},
+	}
+
+	req, err := ItemModelToCreateRequest(item, 0)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	ci := req.CreateItem
+	if ci == nil {
+		t.Fatal("expected CreateItem")
+	}
+	if ci.Item.TextItem == nil {
+		t.Fatal("expected TextItem")
+	}
+	if ci.Item.QuestionItem != nil {
+		t.Fatal("expected QuestionItem to be nil for text_item")
+	}
+	if ci.Item.Title != "Welcome" {
+		t.Errorf("title=%q, want Welcome", ci.Item.Title)
+	}
+	if ci.Item.Description != "Please answer the questions below." {
+		t.Errorf("description=%q, want expected", ci.Item.Description)
 	}
 }
 
@@ -415,7 +517,7 @@ func TestBuildQuizSettingsRequest_DisableQuiz(t *testing.T) {
 }
 
 // ---------------------------------------------------------------------------
-// helpers — ensure types compile (verify forms import used)
+// helpers - ensure types compile (verify forms import used)
 // ---------------------------------------------------------------------------
 
 func TestItemModelToCreateRequest_NoQuestionBlock(t *testing.T) {

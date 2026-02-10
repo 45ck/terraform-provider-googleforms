@@ -66,6 +66,7 @@ func (r *FormResource) Create(
 
 	// Step 3: Build batch update requests for all settings and items.
 	var requests []*forms.Request
+	var createKeys []string
 
 	// Always send title+description via batchUpdate to ensure description is set.
 	description := plan.Description.ValueString()
@@ -96,6 +97,17 @@ func (r *FormResource) Create(
 		}
 
 		if len(convertItems) > 0 {
+			var planItems []ItemModel
+			diags := plan.Items.ElementsAs(ctx, &planItems, false)
+			resp.Diagnostics.Append(diags...)
+			if resp.Diagnostics.HasError() {
+				return
+			}
+			createKeys = make([]string, len(planItems))
+			for i := range planItems {
+				createKeys[i] = planItems[i].ItemKey.ValueString()
+			}
+
 			tflog.Debug(ctx, "creating items from HCL blocks", map[string]interface{}{
 				"item_count": len(convertItems),
 			})
@@ -112,6 +124,7 @@ func (r *FormResource) Create(
 	}
 
 	// Step 4: Execute batchUpdate if there are any requests.
+	var batchResp *forms.BatchUpdateFormResponse
 	if len(requests) > 0 {
 		tflog.Debug(ctx, "executing batchUpdate", map[string]interface{}{
 			"request_count": len(requests),
@@ -122,7 +135,7 @@ func (r *FormResource) Create(
 			IncludeFormInResponse: true,
 		}
 
-		_, err := r.client.Forms.BatchUpdate(ctx, formID, batchReq)
+		apiResp, err := r.client.Forms.BatchUpdate(ctx, formID, batchReq)
 		if err != nil {
 			resp.Diagnostics.AddError(
 				"Error Updating Google Form",
@@ -130,6 +143,7 @@ func (r *FormResource) Create(
 			)
 			return
 		}
+		batchResp = apiResp
 	}
 
 	// Step 5: Set publish settings if published or accepting_responses is true.
@@ -169,11 +183,21 @@ func (r *FormResource) Create(
 		return
 	}
 
-	// For newly created items, we don't have google_item_ids yet, so we
-	// correlate by position: the API returns items in creation order.
-	// ASSUMPTION: The Google Forms API returns items in the same order
-	// they were created via batchUpdate. If the API ever reorders items,
-	// this positional mapping will produce incorrect item_key assignments.
+	if len(createKeys) > 0 && batchResp != nil {
+		createReqIndexToKey, derr := buildCreateReqIndexToKey(requests, createKeys)
+		if derr != nil {
+			resp.Diagnostics.AddWarning("Item Key Correlation Failed", derr.Error())
+		} else {
+			createdKeyMap, derr := extractCreateItemKeyMap(batchResp, requests, createReqIndexToKey)
+			if derr != nil {
+				resp.Diagnostics.AddWarning("Item Key Correlation Failed", derr.Error())
+			} else {
+				keyMap = createdKeyMap
+			}
+		}
+	}
+
+	// Fallback: correlate by position if reply correlation was unavailable.
 	if keyMap == nil && !plan.Items.IsNull() && !plan.Items.IsUnknown() {
 		var planItems []ItemModel
 		diags := plan.Items.ElementsAs(ctx, &planItems, false)
@@ -182,7 +206,6 @@ func (r *FormResource) Create(
 			return
 		}
 
-		// Build positional key map: assign plan item_keys to API items by index.
 		keyMap = make(map[string]string)
 		for i, apiItem := range finalForm.Items {
 			if i < len(planItems) {

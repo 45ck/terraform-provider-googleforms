@@ -4,10 +4,45 @@
 package convert
 
 import (
+	"encoding/json"
 	"fmt"
 
 	forms "google.golang.org/api/forms/v1"
 )
+
+// ApplyDesiredItem returns an updated copy of the existing item matching the
+// desired model. It preserves item/question IDs by starting from a copy of the
+// existing item. If the desired change is structural (e.g. question type
+// changed), it returns needsReplace=true.
+func ApplyDesiredItem(existing *forms.Item, desired ItemModel) (updated *forms.Item, changed bool, needsReplace bool, err error) {
+	if existing == nil {
+		return nil, false, true, fmt.Errorf("existing item is nil")
+	}
+
+	// Deep copy existing to avoid mutating objects reused elsewhere.
+	var copy forms.Item
+	b, merr := json.Marshal(existing)
+	if merr != nil {
+		return nil, false, true, fmt.Errorf("marshal existing item: %w", merr)
+	}
+	if uerr := json.Unmarshal(b, &copy); uerr != nil {
+		return nil, false, true, fmt.Errorf("unmarshal existing item: %w", uerr)
+	}
+
+	// Apply changes to the copy.
+	needsReplace, err = ApplyItemModelToExistingItem(&copy, desired)
+	if err != nil || needsReplace {
+		return nil, false, needsReplace, err
+	}
+
+	// Compare serialized forms as a pragmatic change detector.
+	after, aerr := json.Marshal(&copy)
+	if aerr != nil {
+		return nil, false, true, fmt.Errorf("marshal updated item: %w", aerr)
+	}
+	changed = string(b) != string(after)
+	return &copy, changed, false, nil
+}
 
 // ApplyItemModelToExistingItem updates an existing Forms API Item in-place to
 // match the desired ItemModel, attempting to preserve item/question IDs.
@@ -277,6 +312,67 @@ func ApplyItemModelToExistingItem(existing *forms.Item, desired ItemModel) (bool
 		existing.ImageItem = nil
 		existing.VideoItem = nil
 		existing.QuestionGroupItem = nil
+
+	case desired.Time != nil:
+		if existing.QuestionItem == nil || existing.QuestionItem.Question == nil {
+			return true, nil
+		}
+		q := existing.QuestionItem.Question
+		if q.TimeQuestion == nil {
+			return true, nil
+		}
+		q.Required = desired.Time.Required
+		q.ChoiceQuestion = nil
+		q.TextQuestion = nil
+		q.DateQuestion = nil
+		q.ScaleQuestion = nil
+		q.RatingQuestion = nil
+		q.FileUploadQuestion = nil
+		q.RowQuestion = nil
+		q.TimeQuestion.Duration = desired.Time.Duration
+		q.Grading = nil
+		existing.PageBreakItem = nil
+		existing.TextItem = nil
+		existing.ImageItem = nil
+		existing.VideoItem = nil
+		existing.QuestionGroupItem = nil
+
+	case desired.Rating != nil:
+		if existing.QuestionItem == nil || existing.QuestionItem.Question == nil {
+			return true, nil
+		}
+		q := existing.QuestionItem.Question
+		if q.RatingQuestion == nil {
+			return true, nil
+		}
+		q.Required = desired.Rating.Required
+		q.ChoiceQuestion = nil
+		q.TextQuestion = nil
+		q.DateQuestion = nil
+		q.ScaleQuestion = nil
+		q.TimeQuestion = nil
+		q.FileUploadQuestion = nil
+		q.RowQuestion = nil
+		q.RatingQuestion.IconType = desired.Rating.IconType
+		q.RatingQuestion.RatingScaleLevel = desired.Rating.RatingScaleLevel
+		q.Grading = nil
+		existing.PageBreakItem = nil
+		existing.TextItem = nil
+		existing.ImageItem = nil
+		existing.VideoItem = nil
+		existing.QuestionGroupItem = nil
+
+	case desired.TextItem != nil:
+		if existing.TextItem == nil {
+			return true, nil
+		}
+		existing.Title = desired.TextItem.Title
+		existing.Description = desired.TextItem.Description
+		existing.QuestionItem = nil
+		existing.QuestionGroupItem = nil
+		existing.PageBreakItem = nil
+		existing.ImageItem = nil
+		existing.VideoItem = nil
 
 	case desired.SectionHeader != nil:
 		// Section header is represented as a page break with title/description.

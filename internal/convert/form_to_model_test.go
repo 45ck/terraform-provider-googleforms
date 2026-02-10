@@ -275,6 +275,122 @@ func TestFormToModel_WithGrading(t *testing.T) {
 	}
 }
 
+func TestFormToModel_WithTextItem(t *testing.T) {
+	form := &forms.Form{
+		FormId: "form-text",
+		Info:   &forms.Info{Title: "Text"},
+		Items: []*forms.Item{
+			{
+				ItemId:       "item-text1",
+				Title:        "Welcome",
+				Description:  "Read this first.",
+				TextItem:     &forms.TextItem{},
+				QuestionItem: nil,
+			},
+		},
+	}
+
+	model, err := FormToModel(form, map[string]string{"item-text1": "welcome"})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(model.Items) != 1 {
+		t.Fatalf("items count = %d, want 1", len(model.Items))
+	}
+	it := model.Items[0]
+	if it.TextItem == nil {
+		t.Fatal("expected TextItem to be set")
+	}
+	if it.TextItem.Title != "Welcome" {
+		t.Errorf("title = %q, want Welcome", it.TextItem.Title)
+	}
+	if it.TextItem.Description != "Read this first." {
+		t.Errorf("description = %q, want expected", it.TextItem.Description)
+	}
+}
+
+func TestFormToModel_WithTimeQuestion(t *testing.T) {
+	form := &forms.Form{
+		FormId: "form-time",
+		Info:   &forms.Info{Title: "Time"},
+		Items: []*forms.Item{
+			{
+				ItemId: "item-time1",
+				Title:  "How long?",
+				QuestionItem: &forms.QuestionItem{
+					Question: &forms.Question{
+						Required: true,
+						TimeQuestion: &forms.TimeQuestion{
+							Duration: true,
+						},
+					},
+				},
+			},
+		},
+	}
+
+	model, err := FormToModel(form, nil)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(model.Items) != 1 {
+		t.Fatalf("items count = %d, want 1", len(model.Items))
+	}
+	it := model.Items[0]
+	if it.Time == nil {
+		t.Fatal("expected Time to be set")
+	}
+	if it.Time.QuestionText != "How long?" {
+		t.Errorf("QuestionText = %q, want 'How long?'", it.Time.QuestionText)
+	}
+	if !it.Time.Required {
+		t.Error("expected Required=true")
+	}
+	if !it.Time.Duration {
+		t.Error("expected Duration=true")
+	}
+}
+
+func TestFormToModel_WithRatingQuestion(t *testing.T) {
+	form := &forms.Form{
+		FormId: "form-rating",
+		Info:   &forms.Info{Title: "Rating"},
+		Items: []*forms.Item{
+			{
+				ItemId: "item-rating1",
+				Title:  "Rate us",
+				QuestionItem: &forms.QuestionItem{
+					Question: &forms.Question{
+						Required: true,
+						RatingQuestion: &forms.RatingQuestion{
+							IconType:         "STAR",
+							RatingScaleLevel: 5,
+						},
+					},
+				},
+			},
+		},
+	}
+
+	model, err := FormToModel(form, nil)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(model.Items) != 1 {
+		t.Fatalf("items count = %d, want 1", len(model.Items))
+	}
+	it := model.Items[0]
+	if it.Rating == nil {
+		t.Fatal("expected Rating to be set")
+	}
+	if it.Rating.IconType != "STAR" {
+		t.Errorf("IconType = %q, want STAR", it.Rating.IconType)
+	}
+	if it.Rating.RatingScaleLevel != 5 {
+		t.Errorf("RatingScaleLevel = %d, want 5", it.Rating.RatingScaleLevel)
+	}
+}
+
 func TestFormToModel_MultipleItems_PreservesOrder(t *testing.T) {
 	form := &forms.Form{
 		FormId: "form-multi",

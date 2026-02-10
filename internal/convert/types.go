@@ -18,6 +18,9 @@ type ItemModel struct {
 	Date           *DateBlock
 	DateTime       *DateTimeBlock
 	Scale          *ScaleBlock
+	Time           *TimeBlock
+	Rating         *RatingBlock
+	TextItem       *TextItemBlock
 	SectionHeader  *SectionHeaderBlock
 }
 
@@ -83,8 +86,29 @@ type ScaleBlock struct {
 	HighLabel    string
 }
 
+// TimeBlock describes a time or duration question.
+type TimeBlock struct {
+	QuestionText string
+	Required     bool
+	Duration     bool
+}
+
+// RatingBlock describes a rating question.
+type RatingBlock struct {
+	QuestionText     string
+	Required         bool
+	IconType         string
+	RatingScaleLevel int64
+}
+
+// TextItemBlock describes a text-only item (no question).
+type TextItemBlock struct {
+	Title       string
+	Description string
+}
+
 // SectionHeaderBlock describes a section break / page header.
-// Unlike question types, this has no QuestionItem — only Title and Description.
+// Unlike question types, this has no QuestionItem - only Title and Description.
 type SectionHeaderBlock struct {
 	Title       string
 	Description string

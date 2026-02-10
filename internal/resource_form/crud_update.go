@@ -39,6 +39,12 @@ func (r *FormResource) Update(
 	if !plan.UpdateStrategy.IsNull() && !plan.UpdateStrategy.IsUnknown() && plan.UpdateStrategy.ValueString() != "" {
 		updateStrategy = plan.UpdateStrategy.ValueString()
 	}
+
+	manageMode := "all"
+	if !plan.ManageMode.IsNull() && !plan.ManageMode.IsUnknown() && plan.ManageMode.ValueString() != "" {
+		manageMode = plan.ManageMode.ValueString()
+	}
+
 	dangerReplaceAll := false
 	if !plan.DangerousReplaceAll.IsNull() && !plan.DangerousReplaceAll.IsUnknown() {
 		dangerReplaceAll = plan.DangerousReplaceAll.ValueBool()
@@ -59,6 +65,13 @@ func (r *FormResource) Update(
 	var keyMap map[string]string
 	switch updateStrategy {
 	case "targeted":
+		if manageMode == "partial" && !plan.ContentJSON.IsNull() && !plan.ContentJSON.IsUnknown() && plan.ContentJSON.ValueString() != "" {
+			resp.Diagnostics.AddError(
+				"Invalid Configuration",
+				"manage_mode = \"partial\" is not supported with content_json. Use item blocks for partial management.",
+			)
+			return
+		}
 		km, d := r.updateTargeted(ctx, plan, state, currentForm)
 		resp.Diagnostics.Append(d...)
 		if resp.Diagnostics.HasError() {
@@ -66,6 +79,13 @@ func (r *FormResource) Update(
 		}
 		keyMap = km
 	case "replace_all":
+		if manageMode == "partial" && (plan.ContentJSON.IsNull() || plan.ContentJSON.IsUnknown() || plan.ContentJSON.ValueString() == "") {
+			resp.Diagnostics.AddError(
+				"Invalid Configuration",
+				"manage_mode = \"partial\" cannot be used with update_strategy = \"replace_all\" because it would delete unmanaged items. Use update_strategy = \"targeted\".",
+			)
+			return
+		}
 		if !dangerReplaceAll {
 			resp.Diagnostics.AddWarning(
 				"Replace-All Item Updates Enabled",
@@ -132,6 +152,10 @@ func (r *FormResource) Update(
 		return
 	}
 
+	if manageMode == "partial" {
+		formModel.Items = filterItemsByKeyMap(formModel.Items, keyMap)
+	}
+
 	// Step 8: Convert to TF state and save.
 	newState := convertFormModelToTFState(formModel, plan)
 
@@ -158,15 +182,38 @@ func (r *FormResource) updateReplaceAll(
 	var diags diag.Diagnostics
 	createdKeyMap := map[string]string{}
 
+	conflictPolicy := "overwrite"
+	if !plan.ConflictPolicy.IsNull() && !plan.ConflictPolicy.IsUnknown() && plan.ConflictPolicy.ValueString() != "" {
+		conflictPolicy = plan.ConflictPolicy.ValueString()
+	}
+	if conflictPolicy == "fail" && !state.RevisionID.IsNull() && !state.RevisionID.IsUnknown() && state.RevisionID.ValueString() != "" {
+		if currentForm != nil && currentForm.RevisionId != "" && currentForm.RevisionId != state.RevisionID.ValueString() {
+			diags.AddError(
+				"Update Conflict Detected",
+				fmt.Sprintf("Form revision_id changed since last read (state=%s current=%s). Set conflict_policy = \"overwrite\" to force applying to the latest revision.", state.RevisionID.ValueString(), currentForm.RevisionId),
+			)
+			return nil, diags
+		}
+	} else if conflictPolicy == "fail" {
+		diags.AddWarning(
+			"Conflict Detection Not Available",
+			"conflict_policy is \"fail\" but revision_id is not available in state. Proceeding without write control.",
+		)
+	}
+
 	// Order: (1) UpdateFormInfo, (2) delete items, (3) quiz settings, (4) create items.
 	// Item deletes MUST precede quiz settings changes so that disabling quiz
 	// mode does not fail due to still-existing graded items.
 	var requests []*forms.Request
 
-	requests = append(requests, convert.BuildUpdateInfoRequest(
-		plan.Title.ValueString(),
-		plan.Description.ValueString(),
-	))
+	if currentForm == nil || currentForm.Info == nil ||
+		currentForm.Info.Title != plan.Title.ValueString() ||
+		currentForm.Info.Description != plan.Description.ValueString() {
+		requests = append(requests, convert.BuildUpdateInfoRequest(
+			plan.Title.ValueString(),
+			plan.Description.ValueString(),
+		))
+	}
 
 	existingItemCount := len(currentForm.Items)
 	var createItemRequests []*forms.Request
@@ -247,6 +294,9 @@ func (r *FormResource) updateReplaceAll(
 		Requests:              requests,
 		IncludeFormInResponse: true,
 	}
+	if conflictPolicy == "fail" && !state.RevisionID.IsNull() && !state.RevisionID.IsUnknown() && state.RevisionID.ValueString() != "" {
+		batchReq.WriteControl = &forms.WriteControl{RequiredRevisionId: state.RevisionID.ValueString()}
+	}
 
 	apiResp, err := r.client.Forms.BatchUpdate(ctx, state.ID.ValueString(), batchReq)
 	if err != nil {
@@ -281,6 +331,30 @@ func (r *FormResource) updateTargeted(
 	diags.Append(d...)
 	if diags.HasError() {
 		return nil, diags
+	}
+
+	conflictPolicy := "overwrite"
+	if !plan.ConflictPolicy.IsNull() && !plan.ConflictPolicy.IsUnknown() && plan.ConflictPolicy.ValueString() != "" {
+		conflictPolicy = plan.ConflictPolicy.ValueString()
+	}
+	if conflictPolicy == "fail" && !state.RevisionID.IsNull() && !state.RevisionID.IsUnknown() && state.RevisionID.ValueString() != "" {
+		if currentForm != nil && currentForm.RevisionId != "" && currentForm.RevisionId != state.RevisionID.ValueString() {
+			diags.AddError(
+				"Update Conflict Detected",
+				fmt.Sprintf("Form revision_id changed since last read (state=%s current=%s). Set conflict_policy = \"overwrite\" to force applying to the latest revision.", state.RevisionID.ValueString(), currentForm.RevisionId),
+			)
+			return nil, diags
+		}
+	} else if conflictPolicy == "fail" {
+		diags.AddWarning(
+			"Conflict Detection Not Available",
+			"conflict_policy is \"fail\" but revision_id is not available in state. Proceeding without write control.",
+		)
+	}
+
+	manageMode := "all"
+	if !plan.ManageMode.IsNull() && !plan.ManageMode.IsUnknown() && plan.ManageMode.ValueString() != "" {
+		manageMode = plan.ManageMode.ValueString()
 	}
 
 	createdKeyMap := map[string]string{}
@@ -325,10 +399,14 @@ func (r *FormResource) updateTargeted(
 	}
 
 	var requests []*forms.Request
-	requests = append(requests, convert.BuildUpdateInfoRequest(
-		plan.Title.ValueString(),
-		plan.Description.ValueString(),
-	))
+	if currentForm == nil || currentForm.Info == nil ||
+		currentForm.Info.Title != plan.Title.ValueString() ||
+		currentForm.Info.Description != plan.Description.ValueString() {
+		requests = append(requests, convert.BuildUpdateInfoRequest(
+			plan.Title.ValueString(),
+			plan.Description.ValueString(),
+		))
+	}
 
 	planQuiz := plan.Quiz.ValueBool()
 	stateQuiz := state.Quiz.ValueBool()
@@ -354,20 +432,36 @@ func (r *FormResource) updateTargeted(
 		key := it.ItemKey.ValueString()
 		planKeySeen[key] = true
 		if gid, ok := stateKeyToID[key]; ok {
-			planExistingIDs = append(planExistingIDs, gid)
-		} else {
-			planNewIndices = append(planNewIndices, i)
+			if _, exists := byID[gid]; exists {
+				planExistingIDs = append(planExistingIDs, gid)
+				continue
+			}
+			if manageMode == "partial" {
+				// Previously-managed item was deleted out-of-band; treat as new.
+				delete(stateKeyToID, key)
+				planNewIndices = append(planNewIndices, i)
+				continue
+			}
+
+			diags.AddError(
+				"Targeted Update Failed",
+				fmt.Sprintf("State tracked item %q (google_item_id=%s) not found in current form. Switch to update_strategy = \"replace_all\".", key, gid),
+			)
+			return nil, diags
 		}
+		planNewIndices = append(planNewIndices, i)
 	}
 
 	// Validate that all items in the current form are tracked by state (required for safe moves/deletes).
-	for _, id := range currentOrder {
-		if _, ok := keyMap[id]; !ok {
-			diags.AddError(
-				"Targeted Update Requires Full Item State",
-				"One or more existing items are not present in Terraform state (missing google_item_id mapping). Import the form or switch to update_strategy = \"replace_all\".",
-			)
-			return nil, diags
+	if manageMode == "all" {
+		for _, id := range currentOrder {
+			if _, ok := keyMap[id]; !ok {
+				diags.AddError(
+					"Targeted Update Requires Full Item State",
+					"One or more existing items are not present in Terraform state (missing google_item_id mapping). Import the form or switch to update_strategy = \"replace_all\".",
+				)
+				return nil, diags
+			}
 		}
 	}
 
@@ -401,36 +495,89 @@ func (r *FormResource) updateTargeted(
 	}
 
 	// Step B: reorder existing items (ignoring new items) to match plan order.
-	if len(currentOrder) != len(planExistingIDs) {
-		diags.AddError(
-			"Targeted Update Structural Mismatch",
-			"After applying deletions, the remaining item count does not match the number of existing items in the plan. Switch to update_strategy = \"replace_all\".",
-		)
-		return nil, diags
-	}
-
-	for targetIdx, wantID := range planExistingIDs {
-		curIdx := indexOf(currentOrder, wantID)
-		if curIdx < 0 {
+	if manageMode == "all" {
+		if len(currentOrder) != len(planExistingIDs) {
 			diags.AddError(
-				"Targeted Update Failed To Locate Existing Item",
-				fmt.Sprintf("Could not find existing item ID %s in the current form. Switch to update_strategy = \"replace_all\".", wantID),
+				"Targeted Update Structural Mismatch",
+				"After applying deletions, the remaining item count does not match the number of existing items in the plan. Switch to update_strategy = \"replace_all\".",
 			)
 			return nil, diags
 		}
-		if curIdx != targetIdx {
-			requests = append(requests, &forms.Request{
-				MoveItem: &forms.MoveItemRequest{
-					OriginalLocation: &forms.Location{Index: int64(curIdx)},
-					NewLocation:      &forms.Location{Index: int64(targetIdx)},
-				},
-			})
-			// simulate move
-			id := currentOrder[curIdx]
-			currentOrder = append(currentOrder[:curIdx], currentOrder[curIdx+1:]...)
-			before := currentOrder[:targetIdx]
-			after := currentOrder[targetIdx:]
-			currentOrder = append(append(append([]string{}, before...), id), after...)
+
+		for targetIdx, wantID := range planExistingIDs {
+			curIdx := indexOf(currentOrder, wantID)
+			if curIdx < 0 {
+				diags.AddError(
+					"Targeted Update Failed To Locate Existing Item",
+					fmt.Sprintf("Could not find existing item ID %s in the current form. Switch to update_strategy = \"replace_all\".", wantID),
+				)
+				return nil, diags
+			}
+			if curIdx != targetIdx {
+				requests = append(requests, &forms.Request{
+					MoveItem: &forms.MoveItemRequest{
+						OriginalLocation: &forms.Location{Index: int64(curIdx)},
+						NewLocation:      &forms.Location{Index: int64(targetIdx)},
+					},
+				})
+				// simulate move
+				id := currentOrder[curIdx]
+				currentOrder = append(currentOrder[:curIdx], currentOrder[curIdx+1:]...)
+				before := currentOrder[:targetIdx]
+				after := currentOrder[targetIdx:]
+				currentOrder = append(append(append([]string{}, before...), id), after...)
+			}
+		}
+	} else {
+		// partial: permute managed items within their existing slots so that
+		// unmanaged items are left in their original order/positions.
+		managedSet := make(map[string]bool, len(planExistingIDs))
+		for _, gid := range planExistingIDs {
+			managedSet[gid] = true
+		}
+
+		managedSlots := make([]int, 0, len(planExistingIDs))
+		for idx, id := range currentOrder {
+			if managedSet[id] {
+				managedSlots = append(managedSlots, idx)
+			}
+		}
+		if len(managedSlots) != len(planExistingIDs) {
+			diags.AddError(
+				"Targeted Update Failed",
+				"Could not compute managed item slots for partial management mode. Switch to update_strategy = \"replace_all\" or set manage_mode = \"all\".",
+			)
+			return nil, diags
+		}
+
+		desiredOrder := append([]string{}, currentOrder...)
+		for i, slot := range managedSlots {
+			desiredOrder[slot] = planExistingIDs[i]
+		}
+
+		for targetIdx, wantID := range desiredOrder {
+			curIdx := indexOf(currentOrder, wantID)
+			if curIdx < 0 {
+				diags.AddError(
+					"Targeted Update Failed To Locate Existing Item",
+					fmt.Sprintf("Could not find existing item ID %s in the current form. Switch to update_strategy = \"replace_all\".", wantID),
+				)
+				return nil, diags
+			}
+			if curIdx != targetIdx {
+				requests = append(requests, &forms.Request{
+					MoveItem: &forms.MoveItemRequest{
+						OriginalLocation: &forms.Location{Index: int64(curIdx)},
+						NewLocation:      &forms.Location{Index: int64(targetIdx)},
+					},
+				})
+				// simulate move
+				id := currentOrder[curIdx]
+				currentOrder = append(currentOrder[:curIdx], currentOrder[curIdx+1:]...)
+				before := currentOrder[:targetIdx]
+				after := currentOrder[targetIdx:]
+				currentOrder = append(append(append([]string{}, before...), id), after...)
+			}
 		}
 	}
 
@@ -452,7 +599,7 @@ func (r *FormResource) updateTargeted(
 			return nil, diags
 		}
 
-		needsReplace, err := convert.ApplyItemModelToExistingItem(ref.item, desiredItems[i])
+		updated, changed, needsReplace, err := convert.ApplyDesiredItem(ref.item, desiredItems[i])
 		if err != nil {
 			diags.AddError("Targeted Update Failed", err.Error())
 			return nil, diags
@@ -465,13 +612,15 @@ func (r *FormResource) updateTargeted(
 			return nil, diags
 		}
 
-		requests = append(requests, &forms.Request{
-			UpdateItem: &forms.UpdateItemRequest{
-				Item:       ref.item,
-				Location:   &forms.Location{Index: int64(idx)},
-				UpdateMask: "*",
-			},
-		})
+		if changed {
+			requests = append(requests, &forms.Request{
+				UpdateItem: &forms.UpdateItemRequest{
+					Item:       updated,
+					Location:   &forms.Location{Index: int64(idx)},
+					UpdateMask: "*",
+				},
+			})
+		}
 	}
 
 	if !planQuiz && stateQuiz {
@@ -486,8 +635,11 @@ func (r *FormResource) updateTargeted(
 		if _, ok := stateKeyToID[key]; ok {
 			continue
 		}
-		// New item: create at its final index in the full plan sequence.
+		// New item: in partial mode, append by default to avoid shifting unmanaged items.
 		insertIdx := i
+		if manageMode == "partial" {
+			insertIdx = len(currentOrder)
+		}
 		req, err := convert.ItemModelToCreateRequest(desiredItems[i], insertIdx)
 		if err != nil {
 			diags.AddError("Error Building Item Requests", err.Error())
@@ -510,6 +662,9 @@ func (r *FormResource) updateTargeted(
 	batchReq := &forms.BatchUpdateFormRequest{
 		Requests:              requests,
 		IncludeFormInResponse: true,
+	}
+	if conflictPolicy == "fail" && !state.RevisionID.IsNull() && !state.RevisionID.IsUnknown() && state.RevisionID.ValueString() != "" {
+		batchReq.WriteControl = &forms.WriteControl{RequiredRevisionId: state.RevisionID.ValueString()}
 	}
 
 	apiResp, err := r.client.Forms.BatchUpdate(ctx, state.ID.ValueString(), batchReq)

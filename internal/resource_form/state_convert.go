@@ -146,6 +146,33 @@ func tfItemsToConvertItems(ctx context.Context, items types.List) ([]convert.Ite
 			result[i].Title = tf.Scale.QuestionText.ValueString()
 		}
 
+		if tf.Time != nil {
+			result[i].Time = &convert.TimeBlock{
+				QuestionText: tf.Time.QuestionText.ValueString(),
+				Required:     tf.Time.Required.ValueBool(),
+				Duration:     tf.Time.Duration.ValueBool(),
+			}
+			result[i].Title = tf.Time.QuestionText.ValueString()
+		}
+
+		if tf.Rating != nil {
+			result[i].Rating = &convert.RatingBlock{
+				QuestionText:     tf.Rating.QuestionText.ValueString(),
+				Required:         tf.Rating.Required.ValueBool(),
+				IconType:         tf.Rating.IconType.ValueString(),
+				RatingScaleLevel: tf.Rating.RatingScaleLevel.ValueInt64(),
+			}
+			result[i].Title = tf.Rating.QuestionText.ValueString()
+		}
+
+		if tf.TextItem != nil {
+			result[i].TextItem = &convert.TextItemBlock{
+				Title:       tf.TextItem.Title.ValueString(),
+				Description: tf.TextItem.Description.ValueString(),
+			}
+			result[i].Title = tf.TextItem.Title.ValueString()
+		}
+
 		if tf.SectionHeader != nil {
 			result[i].SectionHeader = &convert.SectionHeaderBlock{
 				Title:       tf.SectionHeader.Title.ValueString(),
@@ -180,9 +207,12 @@ func convertFormModelToTFState(model *convert.FormModel, plan FormResourceModel)
 		Quiz:                types.BoolValue(model.Quiz),
 		UpdateStrategy:      plan.UpdateStrategy,
 		DangerousReplaceAll: plan.DangerousReplaceAll,
+		ManageMode:          plan.ManageMode,
+		ConflictPolicy:      plan.ConflictPolicy,
 		ContentJSON:         plan.ContentJSON,
 		ResponderURI:        types.StringValue(model.ResponderURI),
 		DocumentTitle:       types.StringValue(model.DocumentTitle),
+		RevisionID:          types.StringValue(model.RevisionID),
 	}
 
 	// edit_uri follows a known pattern
@@ -350,6 +380,37 @@ func convertItemModelToTF(ctx context.Context, item convert.ItemModel, diags *di
 		}
 	}
 
+	if item.Time != nil {
+		t := item.Time
+		tf.Time = &TimeModel{
+			QuestionText: types.StringValue(t.QuestionText),
+			Required:     types.BoolValue(t.Required),
+			Duration:     types.BoolValue(t.Duration),
+		}
+	}
+
+	if item.Rating != nil {
+		r := item.Rating
+		tf.Rating = &RatingModel{
+			QuestionText:     types.StringValue(r.QuestionText),
+			Required:         types.BoolValue(r.Required),
+			IconType:         types.StringValue(r.IconType),
+			RatingScaleLevel: types.Int64Value(r.RatingScaleLevel),
+		}
+	}
+
+	if item.TextItem != nil {
+		ti := item.TextItem
+		tf.TextItem = &TextItemModel{
+			Title: types.StringValue(ti.Title),
+		}
+		if ti.Description != "" {
+			tf.TextItem.Description = types.StringValue(ti.Description)
+		} else {
+			tf.TextItem.Description = types.StringNull()
+		}
+	}
+
 	if item.SectionHeader != nil {
 		sh := item.SectionHeader
 		tf.SectionHeader = &SectionHeaderModel{
@@ -461,6 +522,27 @@ func itemObjectType() types.ObjectType {
 					"high_label":    types.StringType,
 				},
 			},
+			"time": types.ObjectType{
+				AttrTypes: map[string]attr.Type{
+					"question_text": types.StringType,
+					"required":      types.BoolType,
+					"duration":      types.BoolType,
+				},
+			},
+			"rating": types.ObjectType{
+				AttrTypes: map[string]attr.Type{
+					"question_text":      types.StringType,
+					"required":           types.BoolType,
+					"icon_type":          types.StringType,
+					"rating_scale_level": types.Int64Type,
+				},
+			},
+			"text_item": types.ObjectType{
+				AttrTypes: map[string]attr.Type{
+					"title":       types.StringType,
+					"description": types.StringType,
+				},
+			},
 			"section_header": types.ObjectType{
 				AttrTypes: map[string]attr.Type{
 					"title":       types.StringType,
@@ -481,4 +563,21 @@ func gradingObjectType() types.ObjectType {
 			"feedback_incorrect": types.StringType,
 		},
 	}
+}
+
+func filterItemsByKeyMap(items []convert.ItemModel, keyMap map[string]string) []convert.ItemModel {
+	if len(items) == 0 || keyMap == nil {
+		return items
+	}
+
+	out := make([]convert.ItemModel, 0, len(items))
+	for _, it := range items {
+		if it.GoogleItemID == "" {
+			continue
+		}
+		if _, ok := keyMap[it.GoogleItemID]; ok {
+			out = append(out, it)
+		}
+	}
+	return out
 }

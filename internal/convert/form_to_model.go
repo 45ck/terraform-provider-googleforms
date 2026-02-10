@@ -64,6 +64,14 @@ func FormItemToItemModel(item *forms.Item, itemKey string) (*ItemModel, error) {
 		GoogleItemID: item.ItemId,
 	}
 
+	if item.TextItem != nil {
+		model.TextItem = &TextItemBlock{
+			Title:       item.Title,
+			Description: item.Description,
+		}
+		return model, nil
+	}
+
 	// Section headers / page breaks have no QuestionItem.
 	if item.PageBreakItem != nil {
 		model.SectionHeader = &SectionHeaderBlock{
@@ -96,6 +104,15 @@ func FormItemToItemModel(item *forms.Item, itemKey string) (*ItemModel, error) {
 		model.DateTime = convertDateTimeQuestion(item.Title, q)
 	case q.ScaleQuestion != nil:
 		model.Scale = convertScaleQuestion(item.Title, q)
+	case q.TimeQuestion != nil:
+		model.Time = &TimeBlock{QuestionText: item.Title, Required: q.Required, Duration: q.TimeQuestion.Duration}
+	case q.RatingQuestion != nil:
+		model.Rating = &RatingBlock{
+			QuestionText:     item.Title,
+			Required:         q.Required,
+			IconType:         q.RatingQuestion.IconType,
+			RatingScaleLevel: q.RatingQuestion.RatingScaleLevel,
+		}
 	default:
 		return nil, nil // unsupported question type
 	}

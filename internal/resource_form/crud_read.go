@@ -67,6 +67,12 @@ func (r *FormResource) Read(
 		return
 	}
 
+	// In partial management mode, only keep items that are already tracked in
+	// state (keyMap). Unmanaged items remain in the form but are ignored by TF.
+	if state.ManageMode.ValueString() == "partial" {
+		formModel.Items = filterItemsByKeyMap(formModel.Items, keyMap)
+	}
+
 	// Step 5: Map to Terraform state, preserving plan/config values.
 	newState := convertFormModelToTFState(formModel, state)
 

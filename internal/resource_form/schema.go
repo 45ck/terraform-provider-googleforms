@@ -6,10 +6,12 @@ package resourceform
 import (
 	"context"
 
+	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64default"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
@@ -81,6 +83,24 @@ func formAttributes() map[string]schema.Attribute {
 			Default:     booldefault.StaticBool(false),
 			Description: "Acknowledge that replace_all item updates can break response mappings and integrations. When false, the provider will emit warnings when replace_all is used.",
 		},
+		"manage_mode": schema.StringAttribute{
+			Optional:    true,
+			Computed:    true,
+			Default:     stringdefault.StaticString("all"),
+			Description: "Management mode for items. 'all' treats the item list as authoritative for the whole form. 'partial' only manages the configured items (by item_key) and leaves other items untouched; in partial mode, new items are appended by default.",
+			Validators: []validator.String{
+				stringvalidator.OneOf("all", "partial"),
+			},
+		},
+		"conflict_policy": schema.StringAttribute{
+			Optional:    true,
+			Computed:    true,
+			Default:     stringdefault.StaticString("overwrite"),
+			Description: "Conflict policy when the form was edited out-of-band. 'overwrite' applies changes to the latest revision. 'fail' uses write control (requiredRevisionId) and errors if the revision_id has changed since last read.",
+			Validators: []validator.String{
+				stringvalidator.OneOf("overwrite", "fail"),
+			},
+		},
 		"content_json": schema.StringAttribute{
 			Optional:    true,
 			Description: "Declarative JSON array of form items. Mutually exclusive with item blocks. Use jsonencode().",
@@ -105,6 +125,13 @@ func formAttributes() map[string]schema.Attribute {
 		"document_title": schema.StringAttribute{
 			Computed:    true,
 			Description: "The Google Drive document title.",
+			PlanModifiers: []planmodifier.String{
+				stringplanmodifier.UseStateForUnknown(),
+			},
+		},
+		"revision_id": schema.StringAttribute{
+			Computed:    true,
+			Description: "The form revision ID returned by the API (valid for ~24h). Used for conflict detection when conflict_policy = \"fail\".",
 			PlanModifiers: []planmodifier.String{
 				stringplanmodifier.UseStateForUnknown(),
 			},
@@ -308,11 +335,21 @@ func itemBlocks() map[string]schema.Block {
 				},
 				"low": schema.Int64Attribute{
 					Optional:    true,
+					Computed:    true,
+					Default:     int64default.StaticInt64(1),
 					Description: "The lowest value on the scale. Defaults to 1.",
+					Validators: []validator.Int64{
+						int64validator.Between(1, 10),
+					},
 				},
 				"high": schema.Int64Attribute{
 					Optional:    true,
+					Computed:    true,
+					Default:     int64default.StaticInt64(5),
 					Description: "The highest value on the scale. Defaults to 5.",
+					Validators: []validator.Int64{
+						int64validator.Between(2, 10),
+					},
 				},
 				"low_label": schema.StringAttribute{
 					Optional:    true,
@@ -321,6 +358,73 @@ func itemBlocks() map[string]schema.Block {
 				"high_label": schema.StringAttribute{
 					Optional:    true,
 					Description: "Label for the highest value.",
+				},
+			},
+		},
+		"time": schema.SingleNestedBlock{
+			Description: "A time or duration question.",
+			Attributes: map[string]schema.Attribute{
+				"question_text": schema.StringAttribute{
+					Required:    true,
+					Description: "The question text.",
+				},
+				"required": schema.BoolAttribute{
+					Optional:    true,
+					Computed:    true,
+					Default:     booldefault.StaticBool(false),
+					Description: "Whether the question is required.",
+				},
+				"duration": schema.BoolAttribute{
+					Optional:    true,
+					Computed:    true,
+					Default:     booldefault.StaticBool(false),
+					Description: "If true, the question is an elapsed time duration. Otherwise it is a time of day.",
+				},
+			},
+		},
+		"rating": schema.SingleNestedBlock{
+			Description: "A rating question (stars/hearts/thumbs).",
+			Attributes: map[string]schema.Attribute{
+				"question_text": schema.StringAttribute{
+					Required:    true,
+					Description: "The question text.",
+				},
+				"required": schema.BoolAttribute{
+					Optional:    true,
+					Computed:    true,
+					Default:     booldefault.StaticBool(false),
+					Description: "Whether the question is required.",
+				},
+				"icon_type": schema.StringAttribute{
+					Optional:    true,
+					Computed:    true,
+					Default:     stringdefault.StaticString("STAR"),
+					Description: "The icon type (STAR, HEART, THUMB_UP).",
+					Validators: []validator.String{
+						stringvalidator.OneOf("STAR", "HEART", "THUMB_UP"),
+					},
+				},
+				"rating_scale_level": schema.Int64Attribute{
+					Optional:    true,
+					Computed:    true,
+					Default:     int64default.StaticInt64(5),
+					Description: "The number of icons (e.g. 5).",
+					Validators: []validator.Int64{
+						int64validator.Between(1, 10),
+					},
+				},
+			},
+		},
+		"text_item": schema.SingleNestedBlock{
+			Description: "A text-only item (no question).",
+			Attributes: map[string]schema.Attribute{
+				"title": schema.StringAttribute{
+					Required:    true,
+					Description: "Title shown to respondents.",
+				},
+				"description": schema.StringAttribute{
+					Optional:    true,
+					Description: "Optional description shown to respondents.",
 				},
 			},
 		},

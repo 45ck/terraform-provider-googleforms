@@ -558,8 +558,11 @@ func TestUpdate_TitleChange_Success(t *testing.T) {
 	mockForms := &testutil.MockFormsAPI{
 		GetFunc: func(_ context.Context, formID string) (*forms.Form, error) {
 			getCalls++
-			// First call: current form state (pre-update).
-			// Second call: final form state (post-update).
+			if getCalls == 1 {
+				// Pre-update: old title.
+				return basicFormResponse(formID, "Old Title"), nil
+			}
+			// Post-update: new title.
 			return basicFormResponse(formID, "New Title"), nil
 		},
 		BatchUpdateFunc: func(_ context.Context, _ string, req *forms.BatchUpdateFormRequest) (*forms.BatchUpdateFormResponse, error) {

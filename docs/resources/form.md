@@ -22,10 +22,12 @@ Manages a Google Form.
 ### Optional
 
 - `accepting_responses` (Boolean) Whether the form is accepting responses. Requires published = true.
+- `conflict_policy` (String) Conflict policy when the form was edited out-of-band. 'overwrite' applies changes to the latest revision. 'fail' uses write control (requiredRevisionId) and errors if the revision_id has changed since last read.
 - `content_json` (String) Declarative JSON array of form items. Mutually exclusive with item blocks. Use jsonencode().
 - `dangerously_replace_all_items` (Boolean) Acknowledge that replace_all item updates can break response mappings and integrations. When false, the provider will emit warnings when replace_all is used.
 - `description` (String) The form description.
 - `item` (Block List) A form item (question). Each item requires a unique item_key and exactly one question type sub-block. (see [below for nested schema](#nestedblock--item))
+- `manage_mode` (String) Management mode for items. 'all' treats the item list as authoritative for the whole form. 'partial' only manages the configured items (by item_key) and leaves other items untouched; in partial mode, new items are appended by default.
 - `published` (Boolean) Whether the form is published. Must be true before accepting_responses can be true.
 - `quiz` (Boolean) Enable quiz mode with grading.
 - `update_strategy` (String) Update strategy for form items. 'replace_all' deletes and recreates all items on changes. 'targeted' applies deletes/moves/updates/creates using batchUpdate when item_keys are already correlated to google_item_id in state; it refuses question type changes and does not support content_json.
@@ -36,6 +38,7 @@ Manages a Google Form.
 - `edit_uri` (String) The URL to edit the form.
 - `id` (String) The Google Form ID.
 - `responder_uri` (String) The URL for respondents to fill out the form.
+- `revision_id` (String) The form revision ID returned by the API (valid for ~24h). Used for conflict detection when conflict_policy = "fail".
 
 <a id="nestedblock--item"></a>
 ### Nested Schema for `item`
@@ -52,9 +55,12 @@ Optional:
 - `dropdown` (Block, Optional) A dropdown (select) question. (see [below for nested schema](#nestedblock--item--dropdown))
 - `multiple_choice` (Block, Optional) A multiple choice (radio button) question. (see [below for nested schema](#nestedblock--item--multiple_choice))
 - `paragraph` (Block, Optional) A paragraph (multi-line text) question. (see [below for nested schema](#nestedblock--item--paragraph))
+- `rating` (Block, Optional) A rating question (stars/hearts/thumbs). (see [below for nested schema](#nestedblock--item--rating))
 - `scale` (Block, Optional) A linear scale question. (see [below for nested schema](#nestedblock--item--scale))
 - `section_header` (Block, Optional) A section header / page break. Has title and description but no question. (see [below for nested schema](#nestedblock--item--section_header))
 - `short_answer` (Block, Optional) A short answer (single-line text) question. (see [below for nested schema](#nestedblock--item--short_answer))
+- `text_item` (Block, Optional) A text-only item (no question). (see [below for nested schema](#nestedblock--item--text_item))
+- `time` (Block, Optional) A time or duration question. (see [below for nested schema](#nestedblock--item--time))
 
 Read-Only:
 
@@ -197,6 +203,20 @@ Optional:
 
 
 
+<a id="nestedblock--item--rating"></a>
+### Nested Schema for `item.rating`
+
+Required:
+
+- `question_text` (String) The question text.
+
+Optional:
+
+- `icon_type` (String) The icon type (STAR, HEART, THUMB_UP).
+- `rating_scale_level` (Number) The number of icons (e.g. 5).
+- `required` (Boolean) Whether the question is required.
+
+
 <a id="nestedblock--item--scale"></a>
 ### Nested Schema for `item.scale`
 
@@ -249,3 +269,29 @@ Optional:
 - `correct_answer` (String) The correct answer. Must match an option value for multiple choice.
 - `feedback_correct` (String) Feedback shown when the answer is correct.
 - `feedback_incorrect` (String) Feedback shown when the answer is incorrect.
+
+
+
+<a id="nestedblock--item--text_item"></a>
+### Nested Schema for `item.text_item`
+
+Required:
+
+- `title` (String) Title shown to respondents.
+
+Optional:
+
+- `description` (String) Optional description shown to respondents.
+
+
+<a id="nestedblock--item--time"></a>
+### Nested Schema for `item.time`
+
+Required:
+
+- `question_text` (String) The question text.
+
+Optional:
+
+- `duration` (Boolean) If true, the question is an elapsed time duration. Otherwise it is a time of day.
+- `required` (Boolean) Whether the question is required.
