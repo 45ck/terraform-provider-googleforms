@@ -20,6 +20,11 @@ type MockDriveAPI struct {
 	CreatePermissionFunc func(ctx context.Context, fileID string, p *drive.Permission, sendNotificationEmail bool, emailMessage string, supportsAllDrives bool) (*drive.Permission, error)
 	GetPermissionFunc    func(ctx context.Context, fileID, permissionID string, supportsAllDrives bool) (*drive.Permission, error)
 	DeletePermissionFunc func(ctx context.Context, fileID, permissionID string, supportsAllDrives bool) error
+
+	GetFileFunc    func(ctx context.Context, fileID string, supportsAllDrives bool) (*drive.File, error)
+	CreateFileFunc func(ctx context.Context, f *drive.File, supportsAllDrives bool) (*drive.File, error)
+	UpdateFileFunc func(ctx context.Context, fileID string, f *drive.File, addParents string, removeParents string, supportsAllDrives bool) (*drive.File, error)
+	ListFilesFunc  func(ctx context.Context, q string, supportsAllDrives bool) ([]*drive.File, error)
 }
 
 var _ client.DriveAPI = &MockDriveAPI{}
@@ -90,4 +95,32 @@ func (m *MockDriveAPI) DeletePermission(
 		return m.DeletePermissionFunc(ctx, fileID, permissionID, supportsAllDrives)
 	}
 	return nil
+}
+
+func (m *MockDriveAPI) GetFile(ctx context.Context, fileID string, supportsAllDrives bool) (*drive.File, error) {
+	if m.GetFileFunc != nil {
+		return m.GetFileFunc(ctx, fileID, supportsAllDrives)
+	}
+	return &drive.File{Id: fileID, Name: "mock-file"}, nil
+}
+
+func (m *MockDriveAPI) CreateFile(ctx context.Context, f *drive.File, supportsAllDrives bool) (*drive.File, error) {
+	if m.CreateFileFunc != nil {
+		return m.CreateFileFunc(ctx, f, supportsAllDrives)
+	}
+	return &drive.File{Id: "mock-file-id", Name: f.Name, MimeType: f.MimeType, Parents: f.Parents}, nil
+}
+
+func (m *MockDriveAPI) UpdateFile(ctx context.Context, fileID string, f *drive.File, addParents string, removeParents string, supportsAllDrives bool) (*drive.File, error) {
+	if m.UpdateFileFunc != nil {
+		return m.UpdateFileFunc(ctx, fileID, f, addParents, removeParents, supportsAllDrives)
+	}
+	return &drive.File{Id: fileID, Name: f.Name}, nil
+}
+
+func (m *MockDriveAPI) ListFiles(ctx context.Context, q string, supportsAllDrives bool) ([]*drive.File, error) {
+	if m.ListFilesFunc != nil {
+		return m.ListFilesFunc(ctx, q, supportsAllDrives)
+	}
+	return []*drive.File{}, nil
 }

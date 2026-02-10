@@ -13,4 +13,3 @@ type SpreadsheetDataSourceModel struct {
 	TimeZone types.String `tfsdk:"time_zone"`
 	URL      types.String `tfsdk:"url"`
 }
-

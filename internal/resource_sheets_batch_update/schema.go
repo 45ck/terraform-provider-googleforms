@@ -60,4 +60,3 @@ func (r *SheetsBatchUpdateResource) Schema(
 		},
 	}
 }
-

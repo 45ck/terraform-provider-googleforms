@@ -54,4 +54,3 @@ func (r *SheetsBatchUpdateResource) Configure(
 
 	r.client = c
 }
-

@@ -19,6 +19,9 @@ type FormResourceModel struct {
 	ManageMode           types.String `tfsdk:"manage_mode"`
 	PartialNewItemPolicy types.String `tfsdk:"partial_new_item_policy"`
 	ConflictPolicy       types.String `tfsdk:"conflict_policy"`
+	FolderID             types.String `tfsdk:"folder_id"`
+	SupportsAllDrives    types.Bool   `tfsdk:"supports_all_drives"`
+	ParentIDs            types.List   `tfsdk:"parent_ids"`
 	Items                types.List   `tfsdk:"item"`
 	ContentJSON          types.String `tfsdk:"content_json"`
 	ResponderURI         types.String `tfsdk:"responder_uri"`

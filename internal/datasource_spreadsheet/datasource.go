@@ -13,9 +13,7 @@ import (
 	"github.com/45ck/terraform-provider-googleforms/internal/client"
 )
 
-var (
-	_ datasource.DataSource = &SpreadsheetDataSource{}
-)
+var _ datasource.DataSource = &SpreadsheetDataSource{}
 
 // SpreadsheetDataSource implements the googleforms_spreadsheet data source.
 type SpreadsheetDataSource struct {
@@ -119,4 +117,3 @@ func (d *SpreadsheetDataSource) Read(
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
-

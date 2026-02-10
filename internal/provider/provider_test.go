@@ -146,7 +146,7 @@ func TestProviderConfigure_FallbackToEnvVar(t *testing.T) {
 	// Write credentials to a temp file to test file-path resolution.
 	tmpDir := t.TempDir()
 	credFile := filepath.Join(tmpDir, "creds.json")
-	if err := os.WriteFile(credFile, []byte(creds), 0600); err != nil {
+	if err := os.WriteFile(credFile, []byte(creds), 0o600); err != nil {
 		t.Fatalf("failed to write temp cred file: %s", err)
 	}
 

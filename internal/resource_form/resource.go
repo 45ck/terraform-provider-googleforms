@@ -73,4 +73,3 @@ func (r *FormResource) ConfigValidators(
 		GradingRequiresQuizValidator{},
 	}
 }
-

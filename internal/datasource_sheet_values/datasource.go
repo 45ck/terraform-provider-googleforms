@@ -149,4 +149,3 @@ func valueRangeToRows(vr *sheets.ValueRange) (types.List, diag.Diagnostics) {
 	}
 	return list, diags
 }
-

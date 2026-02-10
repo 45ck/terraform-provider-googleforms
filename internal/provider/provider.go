@@ -19,8 +19,11 @@ import (
 	"github.com/45ck/terraform-provider-googleforms/internal/client"
 	datasourcesheetvalues "github.com/45ck/terraform-provider-googleforms/internal/datasource_sheet_values"
 	datasourcespreadsheet "github.com/45ck/terraform-provider-googleforms/internal/datasource_spreadsheet"
+	resourcedrivefile "github.com/45ck/terraform-provider-googleforms/internal/resource_drive_file"
+	resourcedrivefolder "github.com/45ck/terraform-provider-googleforms/internal/resource_drive_folder"
 	resourcedrivepermission "github.com/45ck/terraform-provider-googleforms/internal/resource_drive_permission"
 	resourceform "github.com/45ck/terraform-provider-googleforms/internal/resource_form"
+	resourceformsbatchupdate "github.com/45ck/terraform-provider-googleforms/internal/resource_forms_batch_update"
 	resourceresponsesheet "github.com/45ck/terraform-provider-googleforms/internal/resource_response_sheet"
 	resourcesheet "github.com/45ck/terraform-provider-googleforms/internal/resource_sheet"
 	resourcesheetvalues "github.com/45ck/terraform-provider-googleforms/internal/resource_sheet_values"
@@ -175,6 +178,7 @@ func (p *GoogleFormsProvider) Resources(
 ) []func() resource.Resource {
 	return []func() resource.Resource{
 		resourceform.NewFormResource,
+		resourceformsbatchupdate.NewFormsBatchUpdateResource,
 		resourcespreadsheet.NewSpreadsheetResource,
 		resourcesheet.NewSheetResource,
 		resourcesheetvalues.NewSheetValuesResource,
@@ -184,6 +188,8 @@ func (p *GoogleFormsProvider) Resources(
 		resourcesheetsdevelopermetadata.NewDeveloperMetadataResource,
 		resourcesheetsdatavalidation.NewDataValidationResource,
 		resourcesheetsconditionalformatrule.NewConditionalFormatRuleResource,
+		resourcedrivefolder.NewDriveFolderResource,
+		resourcedrivefile.NewDriveFileResource,
 		resourcedrivepermission.NewDrivePermissionResource,
 		resourceresponsesheet.NewResponseSheetResource,
 	}

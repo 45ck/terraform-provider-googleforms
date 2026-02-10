@@ -23,4 +23,3 @@ type SheetValuesResourceModel struct {
 
 	UpdatedRange types.String `tfsdk:"updated_range"`
 }
-

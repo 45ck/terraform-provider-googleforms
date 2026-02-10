@@ -231,6 +231,10 @@ func convertFormModelToTFState(model *convert.FormModel, plan FormResourceModel)
 	if conflictPolicy.IsNull() || conflictPolicy.IsUnknown() || conflictPolicy.ValueString() == "" {
 		conflictPolicy = types.StringValue("overwrite")
 	}
+	supportsAllDrives := plan.SupportsAllDrives
+	if supportsAllDrives.IsNull() || supportsAllDrives.IsUnknown() {
+		supportsAllDrives = types.BoolValue(false)
+	}
 
 	state := FormResourceModel{
 		ID:                   types.StringValue(model.ID),
@@ -244,6 +248,9 @@ func convertFormModelToTFState(model *convert.FormModel, plan FormResourceModel)
 		ManageMode:           manageMode,
 		PartialNewItemPolicy: partialNewItemPolicy,
 		ConflictPolicy:       conflictPolicy,
+		FolderID:             plan.FolderID,
+		SupportsAllDrives:    supportsAllDrives,
+		ParentIDs:            plan.ParentIDs,
 		ContentJSON:          plan.ContentJSON,
 		ResponderURI:         types.StringValue(model.ResponderURI),
 		DocumentTitle:        types.StringValue(model.DocumentTitle),

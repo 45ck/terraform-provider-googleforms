@@ -51,6 +51,20 @@ type DriveAPI interface {
 	// DeletePermission deletes a permission from a Drive file.
 	// Returns nil if the permission or file is already gone (404 treated as success).
 	DeletePermission(ctx context.Context, fileID, permissionID string, supportsAllDrives bool) error
+
+	// GetFile retrieves metadata for a Drive file.
+	GetFile(ctx context.Context, fileID string, supportsAllDrives bool) (*drive.File, error)
+
+	// CreateFile creates a new Drive file (including folders) and returns its metadata.
+	CreateFile(ctx context.Context, f *drive.File, supportsAllDrives bool) (*drive.File, error)
+
+	// UpdateFile updates a Drive file's metadata and/or parents.
+	// addParents/removeParents should be comma-separated folder IDs (or empty).
+	UpdateFile(ctx context.Context, fileID string, f *drive.File, addParents string, removeParents string, supportsAllDrives bool) (*drive.File, error)
+
+	// ListFiles lists Drive files matching a query.
+	// q uses Drive Files.list query syntax (e.g. "mimeType='...'" and "name contains '...'" etc).
+	ListFiles(ctx context.Context, q string, supportsAllDrives bool) ([]*drive.File, error)
 }
 
 // SheetsAPI defines the interface for Google Sheets API operations.

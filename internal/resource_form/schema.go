@@ -11,6 +11,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/boolplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64default"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
@@ -111,6 +112,24 @@ func formAttributes() map[string]schema.Attribute {
 			Validators: []validator.String{
 				stringvalidator.OneOf("overwrite", "fail"),
 			},
+		},
+		"folder_id": schema.StringAttribute{
+			Optional:    true,
+			Description: "Drive folder ID to place the form into. If set, the provider will move the form file into this folder.",
+		},
+		"supports_all_drives": schema.BoolAttribute{
+			Optional:    true,
+			Computed:    true,
+			Default:     booldefault.StaticBool(false),
+			Description: "Whether to support shared drives when moving the file into folder_id.",
+			PlanModifiers: []planmodifier.Bool{
+				boolplanmodifier.UseStateForUnknown(),
+			},
+		},
+		"parent_ids": schema.ListAttribute{
+			Computed:    true,
+			Description: "Current Drive parent folder IDs for the form (best-effort).",
+			ElementType: types.StringType,
 		},
 		"content_json": schema.StringAttribute{
 			Optional:    true,

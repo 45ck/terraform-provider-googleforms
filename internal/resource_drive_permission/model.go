@@ -24,4 +24,3 @@ type DrivePermissionResourceModel struct {
 
 	DisplayName types.String `tfsdk:"display_name"`
 }
-

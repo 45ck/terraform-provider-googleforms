@@ -77,4 +77,3 @@ func (r *SheetValuesResource) Schema(
 		},
 	}
 }
-

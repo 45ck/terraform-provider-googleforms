@@ -18,4 +18,3 @@ type SheetsBatchUpdateResourceModel struct {
 
 	ResponseJSON types.String `tfsdk:"response_json"`
 }
-

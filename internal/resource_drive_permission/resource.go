@@ -55,4 +55,3 @@ func (r *DrivePermissionResource) Configure(
 
 	r.client = c
 }
-

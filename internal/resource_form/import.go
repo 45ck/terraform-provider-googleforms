@@ -22,4 +22,3 @@ func (r *FormResource) ImportState(
 ) {
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
 }
-

@@ -56,7 +56,6 @@ func (c *FormsAPIClient) Get(
 		result = resp
 		return nil
 	})
-
 	if err != nil {
 		return nil, fmt.Errorf("forms.Get: %w", err)
 	}
@@ -70,8 +69,6 @@ func (c *FormsAPIClient) BatchUpdate(
 	formID string,
 	req *forms.BatchUpdateFormRequest,
 ) (*forms.BatchUpdateFormResponse, error) {
-	req.IncludeFormInResponse = true
-
 	var result *forms.BatchUpdateFormResponse
 
 	err := WithRetry(ctx, c.retry, func() error {
@@ -82,7 +79,6 @@ func (c *FormsAPIClient) BatchUpdate(
 		result = resp
 		return nil
 	})
-
 	if err != nil {
 		return nil, fmt.Errorf("forms.BatchUpdate: %w", err)
 	}
@@ -113,7 +109,6 @@ func (c *FormsAPIClient) SetPublishSettings(
 		}
 		return nil
 	})
-
 	if err != nil {
 		return fmt.Errorf("forms.SetPublishSettings: %w", err)
 	}

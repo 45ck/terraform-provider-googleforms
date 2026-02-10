@@ -57,4 +57,3 @@ func (r *SpreadsheetResource) Configure(
 
 	r.client = c
 }
-

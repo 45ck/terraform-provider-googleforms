@@ -165,6 +165,27 @@ func (r *FormResource) Create(
 		}
 	}
 
+	// Step 5b: Optional: move the form into a Drive folder.
+	supportsAllDrives := false
+	if !plan.SupportsAllDrives.IsNull() && !plan.SupportsAllDrives.IsUnknown() {
+		supportsAllDrives = plan.SupportsAllDrives.ValueBool()
+	}
+	if !plan.FolderID.IsNull() && !plan.FolderID.IsUnknown() && plan.FolderID.ValueString() != "" {
+		if err := r.client.Drive.MoveToFolder(ctx, formID, plan.FolderID.ValueString(), supportsAllDrives); err != nil {
+			resp.Diagnostics.AddError("Move Form To Folder Failed", err.Error())
+			return
+		}
+	}
+	// Best-effort: record current parents.
+	if parents, err := r.client.Drive.GetParents(ctx, formID, supportsAllDrives); err == nil {
+		lv, diags := types.ListValueFrom(ctx, types.StringType, parents)
+		resp.Diagnostics.Append(diags...)
+		plan.ParentIDs = lv
+	} else {
+		resp.Diagnostics.AddWarning("Drive Parents Unavailable", err.Error())
+		plan.ParentIDs = types.ListNull(types.StringType)
+	}
+
 	// Step 6: Read back the final form state to capture all computed fields.
 	finalForm, err := r.client.Forms.Get(ctx, formID)
 	if err != nil {

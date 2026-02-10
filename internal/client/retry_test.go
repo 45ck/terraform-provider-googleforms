@@ -20,7 +20,6 @@ func TestRetry_SuccessOnFirstAttempt(t *testing.T) {
 		atomic.AddInt32(&attempts, 1)
 		return nil
 	})
-
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
@@ -43,7 +42,6 @@ func TestRetry_SuccessAfterRetries(t *testing.T) {
 		}
 		return nil
 	})
-
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
@@ -172,7 +170,6 @@ func TestRetry_RetriesOn429(t *testing.T) {
 		}
 		return nil
 	})
-
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
@@ -195,7 +192,6 @@ func TestRetry_RetriesOn503(t *testing.T) {
 		}
 		return nil
 	})
-
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
@@ -218,7 +214,6 @@ func TestRetry_RetriesOn502(t *testing.T) {
 		}
 		return nil
 	})
-
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
@@ -241,7 +236,6 @@ func TestRetry_RetriesOn504(t *testing.T) {
 		}
 		return nil
 	})
-
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}

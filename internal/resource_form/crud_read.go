@@ -8,6 +8,7 @@ import (
 	"fmt"
 
 	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 
 	"github.com/45ck/terraform-provider-googleforms/internal/client"
@@ -82,6 +83,20 @@ func (r *FormResource) Read(
 
 	// Step 5: Map to Terraform state, preserving plan/config values.
 	newState := convertFormModelToTFState(formModel, state)
+
+	// Best-effort: record current Drive parents.
+	supportsAllDrives := false
+	if !state.SupportsAllDrives.IsNull() && !state.SupportsAllDrives.IsUnknown() {
+		supportsAllDrives = state.SupportsAllDrives.ValueBool()
+	}
+	if parents, err := r.client.Drive.GetParents(ctx, formID, supportsAllDrives); err == nil {
+		lv, diags := types.ListValueFrom(ctx, types.StringType, parents)
+		resp.Diagnostics.Append(diags...)
+		newState.ParentIDs = lv
+	} else {
+		resp.Diagnostics.AddWarning("Drive Parents Unavailable", err.Error())
+		newState.ParentIDs = types.ListNull(types.StringType)
+	}
 
 	// Step 6: Set items (unless using content_json mode).
 	if state.ContentJSON.IsNull() || state.ContentJSON.IsUnknown() || state.ContentJSON.ValueString() == "" {

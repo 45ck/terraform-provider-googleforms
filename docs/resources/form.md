@@ -26,11 +26,13 @@ Manages a Google Form. Note: some Forms item types are not supported by the API 
 - `content_json` (String) Declarative JSON array of form items. Mutually exclusive with item blocks. Use jsonencode().
 - `dangerously_replace_all_items` (Boolean) Acknowledge that replace_all item updates can break response mappings and integrations. When false, the provider will emit warnings when replace_all is used.
 - `description` (String) The form description.
+- `folder_id` (String) Drive folder ID to place the form into. If set, the provider will move the form file into this folder.
 - `item` (Block List) A form item (question). Each item requires a unique item_key and exactly one question type sub-block. (see [below for nested schema](#nestedblock--item))
 - `manage_mode` (String) Management mode for items. 'all' treats the item list as authoritative for the whole form. 'partial' only manages the configured items (by item_key) and leaves other items untouched; in partial mode, new items are appended by default.
 - `partial_new_item_policy` (String) Policy for placing newly created items when manage_mode = "partial". 'append' (default) adds new managed items to the end of the form without shifting unmanaged items. 'plan_index' inserts at the index specified by the plan's item list, which may shift unmanaged items.
 - `published` (Boolean) Whether the form is published. Must be true before accepting_responses can be true.
 - `quiz` (Boolean) Enable quiz mode with grading.
+- `supports_all_drives` (Boolean) Whether to support shared drives when moving the file into folder_id.
 - `update_strategy` (String) Update strategy for form items. 'replace_all' deletes and recreates all items on changes. 'targeted' applies deletes/moves/updates/creates using batchUpdate when item_keys are already correlated to google_item_id in state; it refuses question type changes and does not support content_json.
 
 ### Read-Only
@@ -38,6 +40,7 @@ Manages a Google Form. Note: some Forms item types are not supported by the API 
 - `document_title` (String) The Google Drive document title.
 - `edit_uri` (String) The URL to edit the form.
 - `id` (String) The Google Form ID.
+- `parent_ids` (List of String) Current Drive parent folder IDs for the form (best-effort).
 - `responder_uri` (String) The URL for respondents to fill out the form.
 - `revision_id` (String) The form revision ID returned by the API (valid for ~24h). Used for conflict detection when conflict_policy = "fail".
 

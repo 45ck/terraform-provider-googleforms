@@ -222,3 +222,138 @@ func wrapDriveAPIError(err error, operation string) error {
 
 	return mapStatusToError(gErr.Code, gErr.Message, operation, "file")
 }
+
+// GetFile retrieves metadata for a Drive file.
+func (c *DriveAPIClient) GetFile(
+	ctx context.Context,
+	fileID string,
+	supportsAllDrives bool,
+) (*drive.File, error) {
+	var result *drive.File
+
+	err := WithRetry(ctx, c.retry, func() error {
+		resp, apiErr := c.service.Files.Get(fileID).
+			Context(ctx).
+			SupportsAllDrives(supportsAllDrives).
+			Fields("id,name,mimeType,parents,webViewLink,trashed,createdTime").
+			Do()
+		if apiErr != nil {
+			return wrapDriveAPIError(apiErr, "get file "+fileID)
+		}
+		result = resp
+		return nil
+	})
+	if err != nil {
+		return nil, fmt.Errorf("drive.GetFile: %w", err)
+	}
+	return result, nil
+}
+
+// CreateFile creates a new Drive file (including folders).
+func (c *DriveAPIClient) CreateFile(
+	ctx context.Context,
+	f *drive.File,
+	supportsAllDrives bool,
+) (*drive.File, error) {
+	var result *drive.File
+
+	err := WithRetry(ctx, c.retry, func() error {
+		resp, apiErr := c.service.Files.Create(f).
+			Context(ctx).
+			SupportsAllDrives(supportsAllDrives).
+			Fields("id,name,mimeType,parents,webViewLink,trashed,createdTime").
+			Do()
+		if apiErr != nil {
+			return wrapDriveAPIError(apiErr, "create file")
+		}
+		result = resp
+		return nil
+	})
+	if err != nil {
+		return nil, fmt.Errorf("drive.CreateFile: %w", err)
+	}
+	return result, nil
+}
+
+// UpdateFile updates Drive metadata and/or parents.
+func (c *DriveAPIClient) UpdateFile(
+	ctx context.Context,
+	fileID string,
+	f *drive.File,
+	addParents string,
+	removeParents string,
+	supportsAllDrives bool,
+) (*drive.File, error) {
+	var result *drive.File
+
+	err := WithRetry(ctx, c.retry, func() error {
+		call := c.service.Files.Update(fileID, f).
+			Context(ctx).
+			SupportsAllDrives(supportsAllDrives).
+			Fields("id,name,mimeType,parents,webViewLink,trashed,createdTime")
+
+		if strings.TrimSpace(addParents) != "" {
+			call = call.AddParents(addParents)
+		}
+		if strings.TrimSpace(removeParents) != "" {
+			call = call.RemoveParents(removeParents)
+		}
+
+		resp, apiErr := call.Do()
+		if apiErr != nil {
+			return wrapDriveAPIError(apiErr, "update file "+fileID)
+		}
+		result = resp
+		return nil
+	})
+	if err != nil {
+		return nil, fmt.Errorf("drive.UpdateFile: %w", err)
+	}
+	return result, nil
+}
+
+// ListFiles lists files matching a Drive query.
+func (c *DriveAPIClient) ListFiles(
+	ctx context.Context,
+	q string,
+	supportsAllDrives bool,
+) ([]*drive.File, error) {
+	var out []*drive.File
+	pageToken := ""
+
+	for {
+		var resp *drive.FileList
+		err := WithRetry(ctx, c.retry, func() error {
+			call := c.service.Files.List().
+				Context(ctx).
+				SupportsAllDrives(supportsAllDrives).
+				IncludeItemsFromAllDrives(supportsAllDrives).
+				Fields("nextPageToken,files(id,name,mimeType,parents,webViewLink,trashed,createdTime)")
+			if strings.TrimSpace(q) != "" {
+				call = call.Q(q)
+			}
+			if strings.TrimSpace(pageToken) != "" {
+				call = call.PageToken(pageToken)
+			}
+			r, apiErr := call.Do()
+			if apiErr != nil {
+				return wrapDriveAPIError(apiErr, "list files")
+			}
+			resp = r
+			return nil
+		})
+		if err != nil {
+			return nil, fmt.Errorf("drive.ListFiles: %w", err)
+		}
+
+		if resp != nil && len(resp.Files) > 0 {
+			out = append(out, resp.Files...)
+		}
+		if resp == nil || strings.TrimSpace(resp.NextPageToken) == "" {
+			break
+		}
+		pageToken = resp.NextPageToken
+	}
+
+	return out, nil
+}

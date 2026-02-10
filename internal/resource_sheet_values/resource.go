@@ -55,4 +55,3 @@ func (r *SheetValuesResource) Configure(
 
 	r.client = c
 }
-

@@ -57,4 +57,3 @@ func (r *SheetResource) Configure(
 
 	r.client = c
 }
-

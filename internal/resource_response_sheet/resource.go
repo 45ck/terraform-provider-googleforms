@@ -54,4 +54,3 @@ func (r *ResponseSheetResource) Configure(
 
 	r.client = c
 }
-

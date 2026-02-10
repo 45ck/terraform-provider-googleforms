@@ -55,7 +55,6 @@ func (c *SheetsAPIClient) Get(
 		result = resp
 		return nil
 	})
-
 	if err != nil {
 		return nil, fmt.Errorf("sheets.Get: %w", err)
 	}
@@ -79,7 +78,6 @@ func (c *SheetsAPIClient) BatchUpdate(
 		result = resp
 		return nil
 	})
-
 	if err != nil {
 		return nil, fmt.Errorf("sheets.BatchUpdate: %w", err)
 	}
@@ -103,7 +101,6 @@ func (c *SheetsAPIClient) ValuesGet(
 		result = resp
 		return nil
 	})
-
 	if err != nil {
 		return nil, fmt.Errorf("sheets.ValuesGet: %w", err)
 	}
@@ -133,7 +130,6 @@ func (c *SheetsAPIClient) ValuesUpdate(
 		result = resp
 		return nil
 	})
-
 	if err != nil {
 		return nil, fmt.Errorf("sheets.ValuesUpdate: %w", err)
 	}
@@ -154,7 +150,6 @@ func (c *SheetsAPIClient) ValuesClear(
 		}
 		return nil
 	})
-
 	if err != nil {
 		return fmt.Errorf("sheets.ValuesClear: %w", err)
 	}

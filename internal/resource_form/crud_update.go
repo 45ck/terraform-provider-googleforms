@@ -10,6 +10,7 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	forms "google.golang.org/api/forms/v1"
 
@@ -124,6 +125,30 @@ func (r *FormResource) Update(
 			)
 			return
 		}
+	}
+
+	// Step 5b: Optional: move the form into a Drive folder.
+	supportsAllDrives := false
+	if !plan.SupportsAllDrives.IsNull() && !plan.SupportsAllDrives.IsUnknown() {
+		supportsAllDrives = plan.SupportsAllDrives.ValueBool()
+	}
+	if !plan.FolderID.IsNull() && !plan.FolderID.IsUnknown() && plan.FolderID.ValueString() != "" {
+		needMove := state.FolderID.IsNull() || state.FolderID.IsUnknown() || state.FolderID.ValueString() != plan.FolderID.ValueString()
+		if needMove {
+			if err := r.client.Drive.MoveToFolder(ctx, formID, plan.FolderID.ValueString(), supportsAllDrives); err != nil {
+				resp.Diagnostics.AddError("Move Form To Folder Failed", err.Error())
+				return
+			}
+		}
+	}
+	// Best-effort: record current parents.
+	if parents, err := r.client.Drive.GetParents(ctx, formID, supportsAllDrives); err == nil {
+		lv, diags := types.ListValueFrom(ctx, types.StringType, parents)
+		resp.Diagnostics.Append(diags...)
+		plan.ParentIDs = lv
+	} else {
+		resp.Diagnostics.AddWarning("Drive Parents Unavailable", err.Error())
+		plan.ParentIDs = types.ListNull(types.StringType)
 	}
 
 	// Step 6: Read back the final form state.

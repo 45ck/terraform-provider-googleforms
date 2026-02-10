@@ -333,4 +333,3 @@ func parseSheetID(id string) (string, int64, diag.Diagnostics) {
 
 	return parts[0], sheetID, diags
 }
-
