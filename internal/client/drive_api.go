@@ -53,6 +53,74 @@ func (c *DriveAPIClient) Delete(
 	return nil
 }
 
+// GetParents returns the current parent folder IDs for a Drive file.
+func (c *DriveAPIClient) GetParents(
+	ctx context.Context,
+	fileID string,
+	supportsAllDrives bool,
+) ([]string, error) {
+	var parents []string
+
+	err := WithRetry(ctx, c.retry, func() error {
+		resp, apiErr := c.service.Files.Get(fileID).
+			Context(ctx).
+			SupportsAllDrives(supportsAllDrives).
+			Fields("parents").
+			Do()
+		if apiErr != nil {
+			return wrapDriveAPIError(apiErr, "get parents for file "+fileID)
+		}
+		parents = resp.Parents
+		return nil
+	})
+	if err != nil {
+		return nil, fmt.Errorf("drive.GetParents: %w", err)
+	}
+
+	return parents, nil
+}
+
+// MoveToFolder moves a Drive file into the given folder.
+// If folderID is empty, the file is moved to the user's root.
+func (c *DriveAPIClient) MoveToFolder(
+	ctx context.Context,
+	fileID string,
+	folderID string,
+	supportsAllDrives bool,
+) error {
+	parents, err := c.GetParents(ctx, fileID, supportsAllDrives)
+	if err != nil {
+		return err
+	}
+
+	remove := strings.Join(parents, ",")
+
+	err = WithRetry(ctx, c.retry, func() error {
+		call := c.service.Files.Update(fileID, nil).
+			Context(ctx).
+			SupportsAllDrives(supportsAllDrives).
+			Fields("id,parents")
+
+		if strings.TrimSpace(folderID) != "" {
+			call = call.AddParents(folderID)
+		}
+		if strings.TrimSpace(remove) != "" {
+			call = call.RemoveParents(remove)
+		}
+
+		_, apiErr := call.Do()
+		if apiErr != nil {
+			return wrapDriveAPIError(apiErr, "move file "+fileID+" to folder "+folderID)
+		}
+		return nil
+	})
+	if err != nil {
+		return fmt.Errorf("drive.MoveToFolder: %w", err)
+	}
+
+	return nil
+}
+
 // CreatePermission creates a permission on a Drive file.
 func (c *DriveAPIClient) CreatePermission(
 	ctx context.Context,

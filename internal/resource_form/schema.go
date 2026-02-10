@@ -6,11 +6,14 @@ package resourceform
 import (
 	"context"
 
+	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
@@ -62,6 +65,21 @@ func formAttributes() map[string]schema.Attribute {
 			Computed:    true,
 			Default:     booldefault.StaticBool(false),
 			Description: "Enable quiz mode with grading.",
+		},
+		"update_strategy": schema.StringAttribute{
+			Optional:    true,
+			Computed:    true,
+			Default:     stringdefault.StaticString("replace_all"),
+			Description: "Update strategy for form items. 'replace_all' deletes and recreates all items on changes. 'targeted' updates existing items in-place when possible (no structural changes).",
+			Validators: []validator.String{
+				stringvalidator.OneOf("replace_all", "targeted"),
+			},
+		},
+		"dangerously_replace_all_items": schema.BoolAttribute{
+			Optional:    true,
+			Computed:    true,
+			Default:     booldefault.StaticBool(false),
+			Description: "Acknowledge that replace_all item updates can break response mappings and integrations. When false, the provider will emit warnings when replace_all is used.",
 		},
 		"content_json": schema.StringAttribute{
 			Optional:    true,
@@ -346,4 +364,3 @@ func gradingBlockSchema() schema.SingleNestedBlock {
 		},
 	}
 }
-

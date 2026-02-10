@@ -8,17 +8,19 @@ import "github.com/hashicorp/terraform-plugin-framework/types"
 
 // FormResourceModel describes the Terraform state for googleforms_form.
 type FormResourceModel struct {
-	ID                 types.String `tfsdk:"id"`
-	Title              types.String `tfsdk:"title"`
-	Description        types.String `tfsdk:"description"`
-	Published          types.Bool   `tfsdk:"published"`
-	AcceptingResponses types.Bool   `tfsdk:"accepting_responses"`
-	Quiz               types.Bool   `tfsdk:"quiz"`
-	Items              types.List   `tfsdk:"item"`
-	ContentJSON        types.String `tfsdk:"content_json"`
-	ResponderURI       types.String `tfsdk:"responder_uri"`
-	EditURI            types.String `tfsdk:"edit_uri"`
-	DocumentTitle      types.String `tfsdk:"document_title"`
+	ID                  types.String `tfsdk:"id"`
+	Title               types.String `tfsdk:"title"`
+	Description         types.String `tfsdk:"description"`
+	Published           types.Bool   `tfsdk:"published"`
+	AcceptingResponses  types.Bool   `tfsdk:"accepting_responses"`
+	Quiz                types.Bool   `tfsdk:"quiz"`
+	UpdateStrategy      types.String `tfsdk:"update_strategy"`
+	DangerousReplaceAll types.Bool   `tfsdk:"dangerously_replace_all_items"`
+	Items               types.List   `tfsdk:"item"`
+	ContentJSON         types.String `tfsdk:"content_json"`
+	ResponderURI        types.String `tfsdk:"responder_uri"`
+	EditURI             types.String `tfsdk:"edit_uri"`
+	DocumentTitle       types.String `tfsdk:"document_title"`
 }
 
 // ItemModel describes a single form item in Terraform state.
@@ -111,4 +113,3 @@ type GradingModel struct {
 	FeedbackCorrect   types.String `tfsdk:"feedback_correct"`
 	FeedbackIncorrect types.String `tfsdk:"feedback_incorrect"`
 }
-

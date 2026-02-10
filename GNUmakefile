@@ -14,8 +14,8 @@ build: ## Build the provider binary
 	go build $(GOFLAGS) -ldflags="$(LDFLAGS)" -o $(BINARY)
 
 install: build ## Install the provider locally
-	mkdir -p ~/.terraform.d/plugins/registry.terraform.io/hashicorp/googleforms/0.1.0/$$(go env GOOS)_$$(go env GOARCH)
-	cp $(BINARY) ~/.terraform.d/plugins/registry.terraform.io/hashicorp/googleforms/0.1.0/$$(go env GOOS)_$$(go env GOARCH)/
+	mkdir -p ~/.terraform.d/plugins/registry.terraform.io/45ck/googleforms/0.1.0/$$(go env GOOS)_$$(go env GOARCH)
+	cp $(BINARY) ~/.terraform.d/plugins/registry.terraform.io/45ck/googleforms/0.1.0/$$(go env GOOS)_$$(go env GOARCH)/
 
 clean: ## Remove build artifacts
 	rm -f $(BINARY)

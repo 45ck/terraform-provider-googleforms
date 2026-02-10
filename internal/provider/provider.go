@@ -25,6 +25,11 @@ import (
 	resourcesheet "github.com/45ck/terraform-provider-googleforms/internal/resource_sheet"
 	resourcesheetvalues "github.com/45ck/terraform-provider-googleforms/internal/resource_sheet_values"
 	resourcesheetsbatchupdate "github.com/45ck/terraform-provider-googleforms/internal/resource_sheets_batch_update"
+	resourcesheetsconditionalformatrule "github.com/45ck/terraform-provider-googleforms/internal/resource_sheets_conditional_format_rule"
+	resourcesheetsdatavalidation "github.com/45ck/terraform-provider-googleforms/internal/resource_sheets_data_validation"
+	resourcesheetsdevelopermetadata "github.com/45ck/terraform-provider-googleforms/internal/resource_sheets_developer_metadata"
+	resourcesheetsnamedrange "github.com/45ck/terraform-provider-googleforms/internal/resource_sheets_named_range"
+	resourcesheetsprotectedrange "github.com/45ck/terraform-provider-googleforms/internal/resource_sheets_protected_range"
 	resourcespreadsheet "github.com/45ck/terraform-provider-googleforms/internal/resource_spreadsheet"
 )
 
@@ -174,6 +179,11 @@ func (p *GoogleFormsProvider) Resources(
 		resourcesheet.NewSheetResource,
 		resourcesheetvalues.NewSheetValuesResource,
 		resourcesheetsbatchupdate.NewSheetsBatchUpdateResource,
+		resourcesheetsnamedrange.NewNamedRangeResource,
+		resourcesheetsprotectedrange.NewProtectedRangeResource,
+		resourcesheetsdevelopermetadata.NewDeveloperMetadataResource,
+		resourcesheetsdatavalidation.NewDataValidationResource,
+		resourcesheetsconditionalformatrule.NewConditionalFormatRuleResource,
 		resourcedrivepermission.NewDrivePermissionResource,
 		resourceresponsesheet.NewResponseSheetResource,
 	}
@@ -187,4 +197,3 @@ func (p *GoogleFormsProvider) DataSources(
 		datasourcesheetvalues.NewSheetValuesDataSource,
 	}
 }
-

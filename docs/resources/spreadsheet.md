@@ -21,10 +21,13 @@ Manages a Google Sheets spreadsheet.
 
 ### Optional
 
+- `folder_id` (String) Drive folder ID to place the spreadsheet into. If set, the provider will move the spreadsheet file into this folder.
 - `locale` (String) The locale of the spreadsheet (e.g. en_AU).
+- `supports_all_drives` (Boolean) Whether to support shared drives when moving the file into folder_id.
 - `time_zone` (String) The time zone of the spreadsheet (e.g. Australia/Sydney).
 
 ### Read-Only
 
 - `id` (String) The spreadsheet ID.
+- `parent_ids` (List of String) Current Drive parent folder IDs for the spreadsheet (best-effort).
 - `url` (String) The URL to the spreadsheet.

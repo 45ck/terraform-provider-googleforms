@@ -14,6 +14,9 @@ import (
 type MockDriveAPI struct {
 	DeleteFunc func(ctx context.Context, fileID string) error
 
+	GetParentsFunc   func(ctx context.Context, fileID string, supportsAllDrives bool) ([]string, error)
+	MoveToFolderFunc func(ctx context.Context, fileID string, folderID string, supportsAllDrives bool) error
+
 	CreatePermissionFunc func(ctx context.Context, fileID string, p *drive.Permission, sendNotificationEmail bool, emailMessage string, supportsAllDrives bool) (*drive.Permission, error)
 	GetPermissionFunc    func(ctx context.Context, fileID, permissionID string, supportsAllDrives bool) (*drive.Permission, error)
 	DeletePermissionFunc func(ctx context.Context, fileID, permissionID string, supportsAllDrives bool) error
@@ -24,6 +27,29 @@ var _ client.DriveAPI = &MockDriveAPI{}
 func (m *MockDriveAPI) Delete(ctx context.Context, fileID string) error {
 	if m.DeleteFunc != nil {
 		return m.DeleteFunc(ctx, fileID)
+	}
+	return nil
+}
+
+func (m *MockDriveAPI) GetParents(
+	ctx context.Context,
+	fileID string,
+	supportsAllDrives bool,
+) ([]string, error) {
+	if m.GetParentsFunc != nil {
+		return m.GetParentsFunc(ctx, fileID, supportsAllDrives)
+	}
+	return []string{}, nil
+}
+
+func (m *MockDriveAPI) MoveToFolder(
+	ctx context.Context,
+	fileID string,
+	folderID string,
+	supportsAllDrives bool,
+) error {
+	if m.MoveToFolderFunc != nil {
+		return m.MoveToFolderFunc(ctx, fileID, folderID, supportsAllDrives)
 	}
 	return nil
 }

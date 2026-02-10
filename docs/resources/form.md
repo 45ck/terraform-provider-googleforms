@@ -23,10 +23,12 @@ Manages a Google Form.
 
 - `accepting_responses` (Boolean) Whether the form is accepting responses. Requires published = true.
 - `content_json` (String) Declarative JSON array of form items. Mutually exclusive with item blocks. Use jsonencode().
+- `dangerously_replace_all_items` (Boolean) Acknowledge that replace_all item updates can break response mappings and integrations. When false, the provider will emit warnings when replace_all is used.
 - `description` (String) The form description.
 - `item` (Block List) A form item (question). Each item requires a unique item_key and exactly one question type sub-block. (see [below for nested schema](#nestedblock--item))
 - `published` (Boolean) Whether the form is published. Must be true before accepting_responses can be true.
 - `quiz` (Boolean) Enable quiz mode with grading.
+- `update_strategy` (String) Update strategy for form items. 'replace_all' deletes and recreates all items on changes. 'targeted' updates existing items in-place when possible (no structural changes).
 
 ### Read-Only
 

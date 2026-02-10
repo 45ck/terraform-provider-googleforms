@@ -24,6 +24,9 @@ jobs:
         with:
           go-version-file: go.mod
           cache: true
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.7.5
       - name: Run acceptance tests
         run: go test ./internal/... -v -timeout 25m -count=1 -parallel=1
       - name: Run sweeper

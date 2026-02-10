@@ -6,10 +6,13 @@ package resourceresponsesheet
 import (
 	"context"
 
+	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 )
 
 // Schema defines the Terraform schema for googleforms_response_sheet.
@@ -51,6 +54,23 @@ func responseSheetAttributes() map[string]schema.Attribute {
 				stringplanmodifier.RequiresReplace(),
 			},
 		},
+		"mode": schema.StringAttribute{
+			Optional:    true,
+			Computed:    true,
+			Default:     stringdefault.StaticString("track"),
+			Description: "Behavior mode. 'track' only records the intended association in state. 'validate' also verifies the form is actually linked to the given spreadsheet (linkedSheetId) and errors if not.",
+			Validators: []validator.String{
+				stringvalidator.OneOf("track", "validate"),
+			},
+		},
+		"linked_sheet_id": schema.StringAttribute{
+			Computed:    true,
+			Description: "The form's actual linkedSheetId (if any).",
+		},
+		"linked": schema.BoolAttribute{
+			Computed:    true,
+			Description: "Whether the form is actually linked to the configured spreadsheet_id.",
+		},
 		"spreadsheet_url": schema.StringAttribute{
 			Computed:    true,
 			Description: "The URL of the linked spreadsheet.",
@@ -60,4 +80,3 @@ func responseSheetAttributes() map[string]schema.Attribute {
 		},
 	}
 }
-

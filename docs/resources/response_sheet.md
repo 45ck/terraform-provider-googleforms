@@ -20,7 +20,13 @@ Links a Google Form to a Google Spreadsheet for response collection. Note: The G
 - `form_id` (String) The Google Form ID to link.
 - `spreadsheet_id` (String) The Google Spreadsheet ID to link as the response destination.
 
+### Optional
+
+- `mode` (String) Behavior mode. 'track' only records the intended association in state. 'validate' also verifies the form is actually linked to the given spreadsheet (linkedSheetId) and errors if not.
+
 ### Read-Only
 
 - `id` (String) Composite ID in the format formID#spreadsheetID.
+- `linked` (Boolean) Whether the form is actually linked to the configured spreadsheet_id.
+- `linked_sheet_id` (String) The form's actual linkedSheetId (if any).
 - `spreadsheet_url` (String) The URL of the linked spreadsheet.

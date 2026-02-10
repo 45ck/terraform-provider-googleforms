@@ -32,13 +32,17 @@ func (r *ResponseSheetResource) Create(
 
 	formID := plan.FormID.ValueString()
 	spreadsheetID := plan.SpreadsheetID.ValueString()
+	mode := "track"
+	if !plan.Mode.IsNull() && !plan.Mode.IsUnknown() && plan.Mode.ValueString() != "" {
+		mode = plan.Mode.ValueString()
+	}
 
 	// Step 1: Verify the form exists.
 	tflog.Debug(ctx, "verifying form exists", map[string]interface{}{
 		"form_id": formID,
 	})
 
-	_, err := r.client.Forms.Get(ctx, formID)
+	f, err := r.client.Forms.Get(ctx, formID)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Form Not Found",
@@ -61,6 +65,19 @@ func (r *ResponseSheetResource) Create(
 		return
 	}
 
+	linkedSheetID := strings.TrimSpace(f.LinkedSheetId)
+	plan.LinkedSheetID = types.StringValue(linkedSheetID)
+	plan.Linked = types.BoolValue(linkedSheetID != "" && linkedSheetID == spreadsheetID)
+	plan.Mode = types.StringValue(mode)
+
+	if mode == "validate" && !plan.Linked.ValueBool() {
+		resp.Diagnostics.AddError(
+			"Response Destination Not Linked",
+			fmt.Sprintf("Form %s is not linked to spreadsheet %s (linkedSheetId=%q). Link responses in the Google Forms UI, then re-apply.", formID, spreadsheetID, linkedSheetID),
+		)
+		return
+	}
+
 	// Step 3: Build state.
 	plan.ID = types.StringValue(fmt.Sprintf("%s#%s", formID, spreadsheetID))
 	plan.SpreadsheetURL = types.StringValue(ss.SpreadsheetUrl)
@@ -71,7 +88,9 @@ func (r *ResponseSheetResource) Create(
 		"form_id":        formID,
 		"spreadsheet_id": spreadsheetID,
 	})
-	tflog.Warn(ctx, "response destination must be configured manually in Google Forms UI or via Apps Script")
+	if mode == "track" {
+		tflog.Warn(ctx, "response destination must be configured manually in Google Forms UI or via Apps Script")
+	}
 }
 
 // Read verifies that the associated form and spreadsheet still exist.
@@ -85,6 +104,11 @@ func (r *ResponseSheetResource) Read(
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 	if resp.Diagnostics.HasError() {
 		return
+	}
+
+	mode := "track"
+	if !state.Mode.IsNull() && !state.Mode.IsUnknown() && state.Mode.ValueString() != "" {
+		mode = state.Mode.ValueString()
 	}
 
 	// Parse the composite ID.
@@ -103,7 +127,7 @@ func (r *ResponseSheetResource) Read(
 	})
 
 	// Step 1: Verify the form still exists.
-	_, err = r.client.Forms.Get(ctx, formID)
+	f, err := r.client.Forms.Get(ctx, formID)
 	if err != nil {
 		if client.IsNotFound(err) {
 			tflog.Warn(ctx, "Google Form not found, removing response sheet link from state", map[string]interface{}{
@@ -141,7 +165,20 @@ func (r *ResponseSheetResource) Read(
 	// Step 3: Refresh computed fields.
 	state.FormID = types.StringValue(formID)
 	state.SpreadsheetID = types.StringValue(spreadsheetID)
+	state.Mode = types.StringValue(mode)
 	state.SpreadsheetURL = types.StringValue(ss.SpreadsheetUrl)
+
+	linkedSheetID := strings.TrimSpace(f.LinkedSheetId)
+	state.LinkedSheetID = types.StringValue(linkedSheetID)
+	state.Linked = types.BoolValue(linkedSheetID != "" && linkedSheetID == spreadsheetID)
+
+	if mode == "validate" && !state.Linked.ValueBool() {
+		resp.Diagnostics.AddError(
+			"Response Destination Not Linked",
+			fmt.Sprintf("Form %s is not linked to spreadsheet %s (linkedSheetId=%q). Link responses in the Google Forms UI, then re-apply.", formID, spreadsheetID, linkedSheetID),
+		)
+		return
+	}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 }
@@ -196,4 +233,3 @@ func parseCompositeID(id string) (formID string, spreadsheetID string, err error
 
 	return parts[0], parts[1], nil
 }
-

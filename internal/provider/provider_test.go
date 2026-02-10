@@ -299,13 +299,18 @@ func TestProviderResources_RegistersFormResource(t *testing.T) {
 
 	// Instantiate all resources and ensure the expected ones are registered.
 	want := map[string]bool{
-		"googleforms_form":                false,
-		"googleforms_response_sheet":      false,
-		"googleforms_spreadsheet":         false,
-		"googleforms_sheet":               false,
-		"googleforms_sheet_values":        false,
-		"googleforms_sheets_batch_update": false,
-		"googleforms_drive_permission":    false,
+		"googleforms_form":                           false,
+		"googleforms_response_sheet":                 false,
+		"googleforms_spreadsheet":                    false,
+		"googleforms_sheet":                          false,
+		"googleforms_sheet_values":                   false,
+		"googleforms_sheets_batch_update":            false,
+		"googleforms_sheets_named_range":             false,
+		"googleforms_sheets_protected_range":         false,
+		"googleforms_sheets_developer_metadata":      false,
+		"googleforms_sheets_data_validation":         false,
+		"googleforms_sheets_conditional_format_rule": false,
+		"googleforms_drive_permission":               false,
 	}
 
 	for _, f := range resourceResp {
@@ -379,4 +384,3 @@ func TestProviderAcceptance_ConfigIsValid(t *testing.T) {
 		},
 	})
 }
-

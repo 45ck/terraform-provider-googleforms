@@ -9,8 +9,11 @@ A Terraform provider for managing Google Forms as infrastructure. Create, update
 
 - Create and manage Google Forms with HCL configuration
 - Create and manage Google Sheets spreadsheets and tabs
+- Drive folder placement for spreadsheets
 - Write bounded cell ranges with drift detection
 - Sheets `batchUpdate` escape hatch via raw request JSON
+- Sheets named ranges, protected ranges, developer metadata
+- Sheets data validation and conditional format rule helpers
 - Drive permission resource for sharing Drive-backed documents
 - Support for multiple choice, short answer, and paragraph questions
 - Quiz mode with grading (correct answers, point values, feedback)
@@ -52,6 +55,7 @@ resource "googleforms_form" "survey" {
   description         = "Managed by Terraform."
   published           = true
   accepting_responses = true
+  update_strategy     = "targeted" # avoids replace-all when only editing existing items
 
   item {
     item_key = "department"

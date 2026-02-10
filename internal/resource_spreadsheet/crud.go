@@ -29,6 +29,11 @@ func (r *SpreadsheetResource) Create(
 		return
 	}
 
+	supportsAllDrives := false
+	if !plan.SupportsAllDrives.IsNull() && !plan.SupportsAllDrives.IsUnknown() {
+		supportsAllDrives = plan.SupportsAllDrives.ValueBool()
+	}
+
 	spreadsheet := &sheets.Spreadsheet{
 		Properties: &sheets.SpreadsheetProperties{
 			Title: plan.Title.ValueString(),
@@ -56,6 +61,14 @@ func (r *SpreadsheetResource) Create(
 		return
 	}
 
+	// Optional: move the spreadsheet into a Drive folder.
+	if !plan.FolderID.IsNull() && !plan.FolderID.IsUnknown() && plan.FolderID.ValueString() != "" {
+		if err := r.client.Drive.MoveToFolder(ctx, created.SpreadsheetId, plan.FolderID.ValueString(), supportsAllDrives); err != nil {
+			resp.Diagnostics.AddError("Move Spreadsheet To Folder Failed", err.Error())
+			return
+		}
+	}
+
 	plan.URL = types.StringValue(created.SpreadsheetUrl)
 	if created.Properties != nil {
 		plan.Title = types.StringValue(created.Properties.Title)
@@ -65,6 +78,16 @@ func (r *SpreadsheetResource) Create(
 		if created.Properties.TimeZone != "" {
 			plan.TimeZone = types.StringValue(created.Properties.TimeZone)
 		}
+	}
+
+	// Best-effort: record current parents.
+	if parents, err := r.client.Drive.GetParents(ctx, created.SpreadsheetId, supportsAllDrives); err == nil {
+		lv, diags := types.ListValueFrom(ctx, types.StringType, parents)
+		resp.Diagnostics.Append(diags...)
+		plan.ParentIDs = lv
+	} else {
+		resp.Diagnostics.AddWarning("Drive Parents Unavailable", err.Error())
+		plan.ParentIDs = types.ListNull(types.StringType)
 	}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
@@ -81,6 +104,11 @@ func (r *SpreadsheetResource) Read(
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 	if resp.Diagnostics.HasError() {
 		return
+	}
+
+	supportsAllDrives := false
+	if !state.SupportsAllDrives.IsNull() && !state.SupportsAllDrives.IsUnknown() {
+		supportsAllDrives = state.SupportsAllDrives.ValueBool()
 	}
 
 	spreadsheet, err := r.client.Sheets.Get(ctx, state.ID.ValueString())
@@ -105,6 +133,16 @@ func (r *SpreadsheetResource) Read(
 		}
 	}
 
+	// Best-effort: record current parents.
+	if parents, err := r.client.Drive.GetParents(ctx, state.ID.ValueString(), supportsAllDrives); err == nil {
+		lv, diags := types.ListValueFrom(ctx, types.StringType, parents)
+		resp.Diagnostics.Append(diags...)
+		state.ParentIDs = lv
+	} else {
+		resp.Diagnostics.AddWarning("Drive Parents Unavailable", err.Error())
+		state.ParentIDs = types.ListNull(types.StringType)
+	}
+
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 }
 
@@ -124,6 +162,11 @@ func (r *SpreadsheetResource) Update(
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 	if resp.Diagnostics.HasError() {
 		return
+	}
+
+	supportsAllDrives := false
+	if !plan.SupportsAllDrives.IsNull() && !plan.SupportsAllDrives.IsUnknown() {
+		supportsAllDrives = plan.SupportsAllDrives.ValueBool()
 	}
 
 	batchReq := &sheets.BatchUpdateSpreadsheetRequest{
@@ -155,8 +198,29 @@ func (r *SpreadsheetResource) Update(
 		return
 	}
 
+	// Optional: move into folder if configured and changed.
+	if !plan.FolderID.IsNull() && !plan.FolderID.IsUnknown() && plan.FolderID.ValueString() != "" {
+		needMove := state.FolderID.IsNull() || state.FolderID.IsUnknown() || state.FolderID.ValueString() != plan.FolderID.ValueString()
+		if needMove {
+			if err := r.client.Drive.MoveToFolder(ctx, state.ID.ValueString(), plan.FolderID.ValueString(), supportsAllDrives); err != nil {
+				resp.Diagnostics.AddError("Move Spreadsheet To Folder Failed", err.Error())
+				return
+			}
+		}
+	}
+
 	plan.ID = state.ID
 	plan.URL = state.URL
+
+	// Best-effort: record current parents.
+	if parents, err := r.client.Drive.GetParents(ctx, state.ID.ValueString(), supportsAllDrives); err == nil {
+		lv, diags := types.ListValueFrom(ctx, types.StringType, parents)
+		resp.Diagnostics.Append(diags...)
+		plan.ParentIDs = lv
+	} else {
+		resp.Diagnostics.AddWarning("Drive Parents Unavailable", err.Error())
+		plan.ParentIDs = types.ListNull(types.StringType)
+	}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
 }
@@ -195,4 +259,3 @@ func (r *SpreadsheetResource) ImportState(
 ) {
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
 }
-

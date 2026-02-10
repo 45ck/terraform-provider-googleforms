@@ -8,10 +8,12 @@ import "github.com/hashicorp/terraform-plugin-framework/types"
 
 // SpreadsheetResourceModel describes the Terraform state for googleforms_spreadsheet.
 type SpreadsheetResourceModel struct {
-	ID       types.String `tfsdk:"id"`
-	Title    types.String `tfsdk:"title"`
-	Locale   types.String `tfsdk:"locale"`
-	TimeZone types.String `tfsdk:"time_zone"`
-	URL      types.String `tfsdk:"url"`
+	ID                types.String `tfsdk:"id"`
+	Title             types.String `tfsdk:"title"`
+	Locale            types.String `tfsdk:"locale"`
+	TimeZone          types.String `tfsdk:"time_zone"`
+	FolderID          types.String `tfsdk:"folder_id"`
+	SupportsAllDrives types.Bool   `tfsdk:"supports_all_drives"`
+	ParentIDs         types.List   `tfsdk:"parent_ids"`
+	URL               types.String `tfsdk:"url"`
 }
-

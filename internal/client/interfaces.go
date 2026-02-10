@@ -35,6 +35,13 @@ type DriveAPI interface {
 	// Returns nil if the file is already deleted (404).
 	Delete(ctx context.Context, fileID string) error
 
+	// GetParents returns the current parent folder IDs for a Drive file.
+	GetParents(ctx context.Context, fileID string, supportsAllDrives bool) ([]string, error)
+
+	// MoveToFolder moves a Drive file into the given folder.
+	// If folderID is empty, the file is moved to the user's root.
+	MoveToFolder(ctx context.Context, fileID string, folderID string, supportsAllDrives bool) error
+
 	// CreatePermission creates a permission on a Drive file.
 	CreatePermission(ctx context.Context, fileID string, p *drive.Permission, sendNotificationEmail bool, emailMessage string, supportsAllDrives bool) (*drive.Permission, error)
 
