@@ -1,7 +1,7 @@
 // Copyright 2026 terraform-provider-googleforms contributors
 // SPDX-License-Identifier: Apache-2.0
 
-package resourcespreadsheet
+package resourcesheetsbatchupdate
 
 import (
 	"context"
@@ -13,31 +13,28 @@ import (
 
 // Compile-time interface checks.
 var (
-	_ resource.Resource                = &SpreadsheetResource{}
-	_ resource.ResourceWithImportState = &SpreadsheetResource{}
+	_ resource.Resource = &SheetsBatchUpdateResource{}
 )
 
-// SpreadsheetResource implements the google_forms_spreadsheet Terraform resource.
-type SpreadsheetResource struct {
+// SheetsBatchUpdateResource implements the google_forms_sheets_batch_update Terraform resource.
+type SheetsBatchUpdateResource struct {
 	client *client.Client
 }
 
-// NewSpreadsheetResource returns a new resource factory function.
-func NewSpreadsheetResource() resource.Resource {
-	return &SpreadsheetResource{}
+// NewSheetsBatchUpdateResource returns a new resource factory function.
+func NewSheetsBatchUpdateResource() resource.Resource {
+	return &SheetsBatchUpdateResource{}
 }
 
-// Metadata sets the resource type name.
-func (r *SpreadsheetResource) Metadata(
+func (r *SheetsBatchUpdateResource) Metadata(
 	_ context.Context,
 	req resource.MetadataRequest,
 	resp *resource.MetadataResponse,
 ) {
-	resp.TypeName = req.ProviderTypeName + "_spreadsheet"
+	resp.TypeName = req.ProviderTypeName + "_sheets_batch_update"
 }
 
-// Configure extracts the provider-configured client.
-func (r *SpreadsheetResource) Configure(
+func (r *SheetsBatchUpdateResource) Configure(
 	_ context.Context,
 	req resource.ConfigureRequest,
 	resp *resource.ConfigureResponse,

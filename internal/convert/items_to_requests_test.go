@@ -130,7 +130,7 @@ func TestMultipleChoiceToRequest_Required(t *testing.T) {
 func TestShortAnswerToRequest_Basic(t *testing.T) {
 	t.Parallel()
 	item := ItemModel{
-		Title: "Your name?",
+		Title:       "Your name?",
 		ShortAnswer: &ShortAnswerBlock{},
 	}
 

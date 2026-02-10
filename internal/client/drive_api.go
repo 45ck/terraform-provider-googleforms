@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 
 	"google.golang.org/api/googleapi"
 
@@ -47,6 +48,97 @@ func (c *DriveAPIClient) Delete(
 
 	if err != nil {
 		return fmt.Errorf("drive.Delete: %w", err)
+	}
+
+	return nil
+}
+
+// CreatePermission creates a permission on a Drive file.
+func (c *DriveAPIClient) CreatePermission(
+	ctx context.Context,
+	fileID string,
+	p *drive.Permission,
+	sendNotificationEmail bool,
+	emailMessage string,
+	supportsAllDrives bool,
+) (*drive.Permission, error) {
+	var result *drive.Permission
+
+	err := WithRetry(ctx, c.retry, func() error {
+		call := c.service.Permissions.Create(fileID, p).
+			Context(ctx).
+			SupportsAllDrives(supportsAllDrives).
+			SendNotificationEmail(sendNotificationEmail)
+		if strings.TrimSpace(emailMessage) != "" {
+			call = call.EmailMessage(emailMessage)
+		}
+
+		resp, apiErr := call.Do()
+		if apiErr != nil {
+			return wrapDriveAPIError(apiErr, "create permission on file "+fileID)
+		}
+		result = resp
+		return nil
+	})
+	if err != nil {
+		return nil, fmt.Errorf("drive.CreatePermission: %w", err)
+	}
+
+	return result, nil
+}
+
+// GetPermission retrieves a permission by ID from a Drive file.
+func (c *DriveAPIClient) GetPermission(
+	ctx context.Context,
+	fileID string,
+	permissionID string,
+	supportsAllDrives bool,
+) (*drive.Permission, error) {
+	var result *drive.Permission
+
+	err := WithRetry(ctx, c.retry, func() error {
+		resp, apiErr := c.service.Permissions.Get(fileID, permissionID).
+			Context(ctx).
+			SupportsAllDrives(supportsAllDrives).
+			Do()
+		if apiErr != nil {
+			return wrapDriveAPIError(apiErr, "get permission "+permissionID+" on file "+fileID)
+		}
+		result = resp
+		return nil
+	})
+	if err != nil {
+		return nil, fmt.Errorf("drive.GetPermission: %w", err)
+	}
+
+	return result, nil
+}
+
+// DeletePermission deletes a permission from a Drive file.
+// Returns nil if the permission or file is already gone (404 treated as success).
+func (c *DriveAPIClient) DeletePermission(
+	ctx context.Context,
+	fileID string,
+	permissionID string,
+	supportsAllDrives bool,
+) error {
+	err := WithRetry(ctx, c.retry, func() error {
+		apiErr := c.service.Permissions.Delete(fileID, permissionID).
+			Context(ctx).
+			SupportsAllDrives(supportsAllDrives).
+			Do()
+		if apiErr != nil {
+			return wrapDriveAPIError(apiErr, "delete permission "+permissionID+" on file "+fileID)
+		}
+		return nil
+	})
+
+	if err != nil && IsNotFound(err) {
+		return nil
+	}
+
+	if err != nil {
+		return fmt.Errorf("drive.DeletePermission: %w", err)
 	}
 
 	return nil

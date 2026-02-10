@@ -8,6 +8,7 @@ package client
 import (
 	"context"
 
+	drive "google.golang.org/api/drive/v3"
 	forms "google.golang.org/api/forms/v1"
 	sheets "google.golang.org/api/sheets/v4"
 )
@@ -33,6 +34,16 @@ type DriveAPI interface {
 	// Delete deletes a form (Drive file) by ID.
 	// Returns nil if the file is already deleted (404).
 	Delete(ctx context.Context, fileID string) error
+
+	// CreatePermission creates a permission on a Drive file.
+	CreatePermission(ctx context.Context, fileID string, p *drive.Permission, sendNotificationEmail bool, emailMessage string, supportsAllDrives bool) (*drive.Permission, error)
+
+	// GetPermission retrieves a permission by ID from a Drive file.
+	GetPermission(ctx context.Context, fileID, permissionID string, supportsAllDrives bool) (*drive.Permission, error)
+
+	// DeletePermission deletes a permission from a Drive file.
+	// Returns nil if the permission or file is already gone (404 treated as success).
+	DeletePermission(ctx context.Context, fileID, permissionID string, supportsAllDrives bool) error
 }
 
 // SheetsAPI defines the interface for Google Sheets API operations.
@@ -45,6 +56,15 @@ type SheetsAPI interface {
 
 	// BatchUpdate applies a batch of update requests to a spreadsheet.
 	BatchUpdate(ctx context.Context, spreadsheetID string, req *sheets.BatchUpdateSpreadsheetRequest) (*sheets.BatchUpdateSpreadsheetResponse, error)
+
+	// ValuesGet retrieves a value range (bounded) from a spreadsheet.
+	ValuesGet(ctx context.Context, spreadsheetID, rng string) (*sheets.ValueRange, error)
+
+	// ValuesUpdate writes a value range (bounded) into a spreadsheet.
+	ValuesUpdate(ctx context.Context, spreadsheetID, rng string, vr *sheets.ValueRange, valueInputOption string) (*sheets.UpdateValuesResponse, error)
+
+	// ValuesClear clears values in a range.
+	ValuesClear(ctx context.Context, spreadsheetID, rng string) error
 }
 
 // Client holds the API clients used by the provider.

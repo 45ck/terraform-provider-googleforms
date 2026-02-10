@@ -17,9 +17,14 @@ import (
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 
 	"github.com/45ck/terraform-provider-googleforms/internal/client"
+	datasourcesheetvalues "github.com/45ck/terraform-provider-googleforms/internal/datasource_sheet_values"
+	datasourcespreadsheet "github.com/45ck/terraform-provider-googleforms/internal/datasource_spreadsheet"
+	resourcedrivepermission "github.com/45ck/terraform-provider-googleforms/internal/resource_drive_permission"
 	resourceform "github.com/45ck/terraform-provider-googleforms/internal/resource_form"
 	resourceresponsesheet "github.com/45ck/terraform-provider-googleforms/internal/resource_response_sheet"
 	resourcesheet "github.com/45ck/terraform-provider-googleforms/internal/resource_sheet"
+	resourcesheetvalues "github.com/45ck/terraform-provider-googleforms/internal/resource_sheet_values"
+	resourcesheetsbatchupdate "github.com/45ck/terraform-provider-googleforms/internal/resource_sheets_batch_update"
 	resourcespreadsheet "github.com/45ck/terraform-provider-googleforms/internal/resource_spreadsheet"
 )
 
@@ -167,6 +172,9 @@ func (p *GoogleFormsProvider) Resources(
 		resourceform.NewFormResource,
 		resourcespreadsheet.NewSpreadsheetResource,
 		resourcesheet.NewSheetResource,
+		resourcesheetvalues.NewSheetValuesResource,
+		resourcesheetsbatchupdate.NewSheetsBatchUpdateResource,
+		resourcedrivepermission.NewDrivePermissionResource,
 		resourceresponsesheet.NewResponseSheetResource,
 	}
 }
@@ -174,5 +182,8 @@ func (p *GoogleFormsProvider) Resources(
 func (p *GoogleFormsProvider) DataSources(
 	_ context.Context,
 ) []func() datasource.DataSource {
-	return []func() datasource.DataSource{}
+	return []func() datasource.DataSource{
+		datasourcespreadsheet.NewSpreadsheetDataSource,
+		datasourcesheetvalues.NewSheetValuesDataSource,
+	}
 }

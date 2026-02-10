@@ -13,9 +13,9 @@ import (
 
 // MockFormsAPI is a configurable mock implementation of client.FormsAPI.
 type MockFormsAPI struct {
-	CreateFunc            func(ctx context.Context, form *forms.Form) (*forms.Form, error)
-	GetFunc               func(ctx context.Context, formID string) (*forms.Form, error)
-	BatchUpdateFunc       func(ctx context.Context, formID string, req *forms.BatchUpdateFormRequest) (*forms.BatchUpdateFormResponse, error)
+	CreateFunc             func(ctx context.Context, form *forms.Form) (*forms.Form, error)
+	GetFunc                func(ctx context.Context, formID string) (*forms.Form, error)
+	BatchUpdateFunc        func(ctx context.Context, formID string, req *forms.BatchUpdateFormRequest) (*forms.BatchUpdateFormResponse, error)
 	SetPublishSettingsFunc func(ctx context.Context, formID string, isPublished bool, isAccepting bool) error
 }
 

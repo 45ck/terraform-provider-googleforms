@@ -157,7 +157,7 @@ func (r *FormResource) Update(
 
 	if planPublished != statePublished || planAccepting != stateAccepting {
 		tflog.Debug(ctx, "updating publish settings", map[string]interface{}{
-			"published":          planPublished,
+			"published":           planPublished,
 			"accepting_responses": planAccepting,
 		})
 

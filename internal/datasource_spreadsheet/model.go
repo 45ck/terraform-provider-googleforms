@@ -1,13 +1,12 @@
 // Copyright 2026 terraform-provider-googleforms contributors
 // SPDX-License-Identifier: Apache-2.0
 
-// Package resourcespreadsheet implements the google_forms_spreadsheet Terraform resource.
-package resourcespreadsheet
+package datasourcespreadsheet
 
 import "github.com/hashicorp/terraform-plugin-framework/types"
 
-// SpreadsheetResourceModel describes the Terraform state for google_forms_spreadsheet.
-type SpreadsheetResourceModel struct {
+// SpreadsheetDataSourceModel describes the Terraform state for google_forms_spreadsheet data source.
+type SpreadsheetDataSourceModel struct {
 	ID       types.String `tfsdk:"id"`
 	Title    types.String `tfsdk:"title"`
 	Locale   types.String `tfsdk:"locale"`

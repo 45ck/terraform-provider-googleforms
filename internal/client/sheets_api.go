@@ -7,7 +7,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"net/http"
 
 	"google.golang.org/api/googleapi"
 
@@ -88,6 +87,81 @@ func (c *SheetsAPIClient) BatchUpdate(
 	return result, nil
 }
 
+// ValuesGet retrieves a bounded range of values from a spreadsheet.
+func (c *SheetsAPIClient) ValuesGet(
+	ctx context.Context,
+	spreadsheetID string,
+	rng string,
+) (*sheets.ValueRange, error) {
+	var result *sheets.ValueRange
+
+	err := WithRetry(ctx, c.retry, func() error {
+		resp, apiErr := c.service.Spreadsheets.Values.Get(spreadsheetID, rng).Context(ctx).Do()
+		if apiErr != nil {
+			return wrapSheetsAPIError(apiErr, "get values "+rng+" from spreadsheet "+spreadsheetID)
+		}
+		result = resp
+		return nil
+	})
+
+	if err != nil {
+		return nil, fmt.Errorf("sheets.ValuesGet: %w", err)
+	}
+
+	return result, nil
+}
+
+// ValuesUpdate writes a bounded range of values into a spreadsheet.
+func (c *SheetsAPIClient) ValuesUpdate(
+	ctx context.Context,
+	spreadsheetID string,
+	rng string,
+	vr *sheets.ValueRange,
+	valueInputOption string,
+) (*sheets.UpdateValuesResponse, error) {
+	var result *sheets.UpdateValuesResponse
+
+	err := WithRetry(ctx, c.retry, func() error {
+		call := c.service.Spreadsheets.Values.Update(spreadsheetID, rng, vr).Context(ctx)
+		if valueInputOption != "" {
+			call = call.ValueInputOption(valueInputOption)
+		}
+		resp, apiErr := call.Do()
+		if apiErr != nil {
+			return wrapSheetsAPIError(apiErr, "update values "+rng+" in spreadsheet "+spreadsheetID)
+		}
+		result = resp
+		return nil
+	})
+
+	if err != nil {
+		return nil, fmt.Errorf("sheets.ValuesUpdate: %w", err)
+	}
+
+	return result, nil
+}
+
+// ValuesClear clears values in a bounded range.
+func (c *SheetsAPIClient) ValuesClear(
+	ctx context.Context,
+	spreadsheetID string,
+	rng string,
+) error {
+	err := WithRetry(ctx, c.retry, func() error {
+		_, apiErr := c.service.Spreadsheets.Values.Clear(spreadsheetID, rng, &sheets.ClearValuesRequest{}).Context(ctx).Do()
+		if apiErr != nil {
+			return wrapSheetsAPIError(apiErr, "clear values "+rng+" in spreadsheet "+spreadsheetID)
+		}
+		return nil
+	})
+
+	if err != nil {
+		return fmt.Errorf("sheets.ValuesClear: %w", err)
+	}
+
+	return nil
+}
+
 // wrapSheetsAPIError converts a googleapi.Error from Sheets API into the
 // appropriate custom error type.
 func wrapSheetsAPIError(err error, operation string) error {
@@ -99,14 +173,4 @@ func wrapSheetsAPIError(err error, operation string) error {
 	return mapStatusToError(gErr.Code, gErr.Message, operation, "spreadsheet")
 }
 
-// mapSheetsStatusToError is an alias for the shared mapStatusToError for clarity.
-func mapSheetsStatusToError(code int, message, operation string) error {
-	switch {
-	case code == http.StatusNotFound:
-		return &NotFoundError{Resource: "spreadsheet", ID: operation}
-	case code == http.StatusTooManyRequests:
-		return &RateLimitError{Message: message}
-	default:
-		return &APIError{StatusCode: code, Message: message}
-	}
-}
+// mapSheetsStatusToError was kept for backward clarity but is no longer used.

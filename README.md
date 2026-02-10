@@ -8,6 +8,10 @@ A Terraform provider for managing Google Forms as infrastructure. Create, update
 ## Features
 
 - Create and manage Google Forms with HCL configuration
+- Create and manage Google Sheets spreadsheets and tabs
+- Write bounded cell ranges with drift detection
+- Sheets `batchUpdate` escape hatch via raw request JSON
+- Drive permission resource for sharing Drive-backed documents
 - Support for multiple choice, short answer, and paragraph questions
 - Quiz mode with grading (correct answers, point values, feedback)
 - Control publish state and response acceptance
@@ -138,7 +142,7 @@ The provider supports three authentication methods (in priority order):
 2. **`GOOGLE_CREDENTIALS` environment variable** — Path to service account JSON
 3. **Application Default Credentials** — Automatically detected from environment
 
-Required OAuth scopes: `forms.body`, `drive.file`
+Required OAuth scopes: `forms.body`, `drive.file`, `spreadsheets`
 
 ## Importing Existing Forms
 

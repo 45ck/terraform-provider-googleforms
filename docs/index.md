@@ -18,14 +18,15 @@ The provider supports three authentication methods (in priority order):
 2. **`GOOGLE_CREDENTIALS` environment variable**
 3. **Application Default Credentials (ADC)** - recommended
 
-Required OAuth scopes: `forms.body`, `drive.file`
+Required OAuth scopes: `forms.body`, `drive.file`, `spreadsheets`
 
 ### Using Application Default Credentials (Recommended)
 
 ```bash
 gcloud auth application-default login --scopes=\
 https://www.googleapis.com/auth/forms.body,\
-https://www.googleapis.com/auth/drive.file
+https://www.googleapis.com/auth/drive.file,\
+https://www.googleapis.com/auth/spreadsheets
 ```
 
 ### Using a Service Account

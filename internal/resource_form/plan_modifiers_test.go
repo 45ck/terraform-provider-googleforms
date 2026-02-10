@@ -176,4 +176,3 @@ func TestContentJSONHashModifier_ImplementsInterface(t *testing.T) {
 	t.Parallel()
 	var _ planmodifier.String = ContentJSONHashModifier{}
 }
-

@@ -1,7 +1,7 @@
 // Copyright 2026 terraform-provider-googleforms contributors
 // SPDX-License-Identifier: Apache-2.0
 
-package resourcespreadsheet
+package resourcedrivepermission
 
 import (
 	"context"
@@ -13,31 +13,29 @@ import (
 
 // Compile-time interface checks.
 var (
-	_ resource.Resource                = &SpreadsheetResource{}
-	_ resource.ResourceWithImportState = &SpreadsheetResource{}
+	_ resource.Resource                = &DrivePermissionResource{}
+	_ resource.ResourceWithImportState = &DrivePermissionResource{}
 )
 
-// SpreadsheetResource implements the google_forms_spreadsheet Terraform resource.
-type SpreadsheetResource struct {
+// DrivePermissionResource implements the google_forms_drive_permission Terraform resource.
+type DrivePermissionResource struct {
 	client *client.Client
 }
 
-// NewSpreadsheetResource returns a new resource factory function.
-func NewSpreadsheetResource() resource.Resource {
-	return &SpreadsheetResource{}
+// NewDrivePermissionResource returns a new resource factory function.
+func NewDrivePermissionResource() resource.Resource {
+	return &DrivePermissionResource{}
 }
 
-// Metadata sets the resource type name.
-func (r *SpreadsheetResource) Metadata(
+func (r *DrivePermissionResource) Metadata(
 	_ context.Context,
 	req resource.MetadataRequest,
 	resp *resource.MetadataResponse,
 ) {
-	resp.TypeName = req.ProviderTypeName + "_spreadsheet"
+	resp.TypeName = req.ProviderTypeName + "_drive_permission"
 }
 
-// Configure extracts the provider-configured client.
-func (r *SpreadsheetResource) Configure(
+func (r *DrivePermissionResource) Configure(
 	_ context.Context,
 	req resource.ConfigureRequest,
 	resp *resource.ConfigureResponse,

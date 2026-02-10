@@ -151,9 +151,9 @@ func buildScale(fi *forms.Item, s *ScaleBlock) {
 	q := &forms.Question{
 		Required: s.Required,
 		ScaleQuestion: &forms.ScaleQuestion{
-			Low:      s.Low,
-			High:     s.High,
-			LowLabel: s.LowLabel,
+			Low:       s.Low,
+			High:      s.High,
+			LowLabel:  s.LowLabel,
 			HighLabel: s.HighLabel,
 		},
 	}

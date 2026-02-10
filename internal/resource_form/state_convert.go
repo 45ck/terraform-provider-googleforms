@@ -172,15 +172,15 @@ func tfGradingToConvert(g *GradingModel) *convert.GradingBlock {
 // FormResourceModel, preserving plan values for non-computed fields.
 func convertFormModelToTFState(model *convert.FormModel, plan FormResourceModel) FormResourceModel {
 	state := FormResourceModel{
-		ID:            types.StringValue(model.ID),
-		Title:         types.StringValue(model.Title),
-		Description:   types.StringValue(model.Description),
-		Published:     plan.Published,
+		ID:                 types.StringValue(model.ID),
+		Title:              types.StringValue(model.Title),
+		Description:        types.StringValue(model.Description),
+		Published:          plan.Published,
 		AcceptingResponses: plan.AcceptingResponses,
-		Quiz:          types.BoolValue(model.Quiz),
-		ContentJSON:   plan.ContentJSON,
-		ResponderURI:  types.StringValue(model.ResponderURI),
-		DocumentTitle: types.StringValue(model.DocumentTitle),
+		Quiz:               types.BoolValue(model.Quiz),
+		ContentJSON:        plan.ContentJSON,
+		ResponderURI:       types.StringValue(model.ResponderURI),
+		DocumentTitle:      types.StringValue(model.DocumentTitle),
 	}
 
 	// edit_uri follows a known pattern

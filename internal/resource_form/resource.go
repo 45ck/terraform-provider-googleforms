@@ -13,8 +13,8 @@ import (
 
 // Compile-time interface checks.
 var (
-	_ resource.Resource                   = &FormResource{}
-	_ resource.ResourceWithImportState    = &FormResource{}
+	_ resource.Resource                     = &FormResource{}
+	_ resource.ResourceWithImportState      = &FormResource{}
 	_ resource.ResourceWithConfigValidators = &FormResource{}
 )
 

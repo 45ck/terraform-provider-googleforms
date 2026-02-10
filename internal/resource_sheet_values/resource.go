@@ -1,7 +1,7 @@
 // Copyright 2026 terraform-provider-googleforms contributors
 // SPDX-License-Identifier: Apache-2.0
 
-package resourcespreadsheet
+package resourcesheetvalues
 
 import (
 	"context"
@@ -13,31 +13,29 @@ import (
 
 // Compile-time interface checks.
 var (
-	_ resource.Resource                = &SpreadsheetResource{}
-	_ resource.ResourceWithImportState = &SpreadsheetResource{}
+	_ resource.Resource                = &SheetValuesResource{}
+	_ resource.ResourceWithImportState = &SheetValuesResource{}
 )
 
-// SpreadsheetResource implements the google_forms_spreadsheet Terraform resource.
-type SpreadsheetResource struct {
+// SheetValuesResource implements the google_forms_sheet_values Terraform resource.
+type SheetValuesResource struct {
 	client *client.Client
 }
 
-// NewSpreadsheetResource returns a new resource factory function.
-func NewSpreadsheetResource() resource.Resource {
-	return &SpreadsheetResource{}
+// NewSheetValuesResource returns a new resource factory function.
+func NewSheetValuesResource() resource.Resource {
+	return &SheetValuesResource{}
 }
 
-// Metadata sets the resource type name.
-func (r *SpreadsheetResource) Metadata(
+func (r *SheetValuesResource) Metadata(
 	_ context.Context,
 	req resource.MetadataRequest,
 	resp *resource.MetadataResponse,
 ) {
-	resp.TypeName = req.ProviderTypeName + "_spreadsheet"
+	resp.TypeName = req.ProviderTypeName + "_sheet_values"
 }
 
-// Configure extracts the provider-configured client.
-func (r *SpreadsheetResource) Configure(
+func (r *SheetValuesResource) Configure(
 	_ context.Context,
 	req resource.ConfigureRequest,
 	resp *resource.ConfigureResponse,

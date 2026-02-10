@@ -187,7 +187,7 @@ func (r *SpreadsheetResource) Delete(
 }
 
 // ImportState handles terraform import for existing Google Sheets spreadsheets.
-// Usage: terraform import google_sheets_spreadsheet.example SPREADSHEET_ID
+// Usage: terraform import google_forms_spreadsheet.example SPREADSHEET_ID
 func (r *SpreadsheetResource) ImportState(
 	ctx context.Context,
 	req resource.ImportStateRequest,

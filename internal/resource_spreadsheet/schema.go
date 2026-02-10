@@ -12,7 +12,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 )
 
-// Schema defines the Terraform schema for google_sheets_spreadsheet.
+// Schema defines the Terraform schema for google_forms_spreadsheet.
 func (r *SpreadsheetResource) Schema(
 	_ context.Context,
 	_ resource.SchemaRequest,

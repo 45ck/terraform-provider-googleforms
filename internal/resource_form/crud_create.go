@@ -137,7 +137,7 @@ func (r *FormResource) Create(
 	accepting := plan.AcceptingResponses.ValueBool()
 	if published || accepting {
 		tflog.Debug(ctx, "setting publish settings", map[string]interface{}{
-			"published":          published,
+			"published":           published,
 			"accepting_responses": accepting,
 		})
 
