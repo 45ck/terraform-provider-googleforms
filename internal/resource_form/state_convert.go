@@ -39,10 +39,12 @@ func tfItemsToConvertItems(ctx context.Context, items types.List) ([]convert.Ite
 			mc := &convert.MultipleChoiceBlock{
 				QuestionText: tf.MultipleChoice.QuestionText.ValueString(),
 				Required:     tf.MultipleChoice.Required.ValueBool(),
+				Shuffle:      tf.MultipleChoice.Shuffle.ValueBool(),
+				HasOther:     tf.MultipleChoice.HasOther.ValueBool(),
 			}
 
-			var opts []string
-			diags.Append(tf.MultipleChoice.Options.ElementsAs(ctx, &opts, false)...)
+			opts, d := tfChoiceOptionsToConvert(ctx, tf.MultipleChoice.Options, tf.MultipleChoice.Option)
+			diags.Append(d...)
 			if diags.HasError() {
 				return nil, diags
 			}
@@ -84,9 +86,10 @@ func tfItemsToConvertItems(ctx context.Context, items types.List) ([]convert.Ite
 			dd := &convert.DropdownBlock{
 				QuestionText: tf.Dropdown.QuestionText.ValueString(),
 				Required:     tf.Dropdown.Required.ValueBool(),
+				Shuffle:      tf.Dropdown.Shuffle.ValueBool(),
 			}
-			var opts []string
-			diags.Append(tf.Dropdown.Options.ElementsAs(ctx, &opts, false)...)
+			opts, d := tfChoiceOptionsToConvert(ctx, tf.Dropdown.Options, tf.Dropdown.Option)
+			diags.Append(d...)
 			if diags.HasError() {
 				return nil, diags
 			}
@@ -102,9 +105,11 @@ func tfItemsToConvertItems(ctx context.Context, items types.List) ([]convert.Ite
 			cb := &convert.CheckboxBlock{
 				QuestionText: tf.Checkbox.QuestionText.ValueString(),
 				Required:     tf.Checkbox.Required.ValueBool(),
+				Shuffle:      tf.Checkbox.Shuffle.ValueBool(),
+				HasOther:     tf.Checkbox.HasOther.ValueBool(),
 			}
-			var opts []string
-			diags.Append(tf.Checkbox.Options.ElementsAs(ctx, &opts, false)...)
+			opts, d := tfChoiceOptionsToConvert(ctx, tf.Checkbox.Options, tf.Checkbox.Option)
+			diags.Append(d...)
 			if diags.HasError() {
 				return nil, diags
 			}
@@ -271,6 +276,102 @@ func tfItemsToConvertItems(ctx context.Context, items types.List) ([]convert.Ite
 	return result, diags
 }
 
+func tfChoiceOptionsToConvert(ctx context.Context, options types.List, optionBlocks types.List) ([]convert.ChoiceOption, diag.Diagnostics) {
+	var diags diag.Diagnostics
+
+	// Prefer option blocks when present.
+	if !optionBlocks.IsNull() && !optionBlocks.IsUnknown() && len(optionBlocks.Elements()) > 0 {
+		var tfOpts []ChoiceOptionModel
+		diags.Append(optionBlocks.ElementsAs(ctx, &tfOpts, false)...)
+		if diags.HasError() {
+			return nil, diags
+		}
+
+		out := make([]convert.ChoiceOption, 0, len(tfOpts))
+		for _, o := range tfOpts {
+			out = append(out, convert.ChoiceOption{
+				Value:          o.Value.ValueString(),
+				GoToAction:     o.GoToAction.ValueString(),
+				GoToSectionKey: o.GoToSectionKey.ValueString(),
+				GoToSectionID:  o.GoToSectionID.ValueString(),
+			})
+		}
+		return out, diags
+	}
+
+	// Backward-compatible path: plain string options list.
+	if options.IsNull() || options.IsUnknown() || len(options.Elements()) == 0 {
+		return nil, diags
+	}
+
+	var vals []string
+	diags.Append(options.ElementsAs(ctx, &vals, false)...)
+	if diags.HasError() {
+		return nil, diags
+	}
+	out := make([]convert.ChoiceOption, 0, len(vals))
+	for _, v := range vals {
+		out = append(out, convert.ChoiceOption{Value: v})
+	}
+	return out, diags
+}
+
+func convertChoiceOptionsToTF(ctx context.Context, opts []convert.ChoiceOption) (types.List, types.List, diag.Diagnostics) {
+	var diags diag.Diagnostics
+
+	// If any option has navigation config, represent in option blocks.
+	needsBlocks := false
+	for _, o := range opts {
+		if o.GoToAction != "" || o.GoToSectionID != "" || o.GoToSectionKey != "" {
+			needsBlocks = true
+			break
+		}
+	}
+
+	if !needsBlocks {
+		values := make([]string, 0, len(opts))
+		for _, o := range opts {
+			values = append(values, o.Value)
+		}
+		lv, d := types.ListValueFrom(ctx, types.StringType, values)
+		diags.Append(d...)
+		return lv, types.ListNull(types.ObjectType{AttrTypes: choiceOptionAttrTypes()}), diags
+	}
+
+	// Use option blocks. Keep legacy options list null to satisfy mutual exclusion validators.
+	tfOpts := make([]ChoiceOptionModel, 0, len(opts))
+	for _, o := range opts {
+		tfOpt := ChoiceOptionModel{
+			Value:          types.StringValue(o.Value),
+			GoToAction:     types.StringNull(),
+			GoToSectionKey: types.StringNull(),
+			GoToSectionID:  types.StringNull(),
+		}
+		if o.GoToAction != "" {
+			tfOpt.GoToAction = types.StringValue(o.GoToAction)
+		}
+		if o.GoToSectionKey != "" {
+			tfOpt.GoToSectionKey = types.StringValue(o.GoToSectionKey)
+		}
+		if o.GoToSectionID != "" {
+			tfOpt.GoToSectionID = types.StringValue(o.GoToSectionID)
+		}
+		tfOpts = append(tfOpts, tfOpt)
+	}
+	ov, d := types.ListValueFrom(ctx, types.ObjectType{AttrTypes: choiceOptionAttrTypes()}, tfOpts)
+	diags.Append(d...)
+	return types.ListNull(types.StringType), ov, diags
+}
+
+func choiceOptionAttrTypes() map[string]attr.Type {
+	return map[string]attr.Type{
+		"value":             types.StringType,
+		"go_to_action":      types.StringType,
+		"go_to_section_key": types.StringType,
+		"go_to_section_id":  types.StringType,
+	}
+}
+
 // tfGradingToConvert converts a TF GradingModel to a convert.GradingBlock.
 func tfGradingToConvert(g *GradingModel) *convert.GradingBlock {
 	return &convert.GradingBlock{
@@ -394,13 +495,16 @@ func convertItemModelToTF(ctx context.Context, item convert.ItemModel, diags *di
 
 	if item.MultipleChoice != nil {
 		mc := item.MultipleChoice
-		opts, d := types.ListValueFrom(ctx, types.StringType, mc.Options)
+		optsList, optionBlocks, d := convertChoiceOptionsToTF(ctx, mc.Options)
 		diags.Append(d...)
 
 		tf.MultipleChoice = &MultipleChoiceModel{
 			QuestionText: types.StringValue(mc.QuestionText),
-			Options:      opts,
+			Options:      optsList,
+			Option:       optionBlocks,
 			Required:     types.BoolValue(mc.Required),
+			Shuffle:      types.BoolValue(mc.Shuffle),
+			HasOther:     types.BoolValue(mc.HasOther),
 		}
 		if mc.Grading != nil {
 			tf.MultipleChoice.Grading = convertGradingToTF(mc.Grading)
@@ -431,12 +535,14 @@ func convertItemModelToTF(ctx context.Context, item convert.ItemModel, diags *di
 
 	if item.Dropdown != nil {
 		dd := item.Dropdown
-		opts, d := types.ListValueFrom(ctx, types.StringType, dd.Options)
+		optsList, optionBlocks, d := convertChoiceOptionsToTF(ctx, dd.Options)
 		diags.Append(d...)
 		tf.Dropdown = &DropdownModel{
 			QuestionText: types.StringValue(dd.QuestionText),
-			Options:      opts,
+			Options:      optsList,
+			Option:       optionBlocks,
 			Required:     types.BoolValue(dd.Required),
+			Shuffle:      types.BoolValue(dd.Shuffle),
 		}
 		if dd.Grading != nil {
 			tf.Dropdown.Grading = convertGradingToTF(dd.Grading)
@@ -445,12 +551,15 @@ func convertItemModelToTF(ctx context.Context, item convert.ItemModel, diags *di
 
 	if item.Checkbox != nil {
 		cb := item.Checkbox
-		opts, d := types.ListValueFrom(ctx, types.StringType, cb.Options)
+		optsList, optionBlocks, d := convertChoiceOptionsToTF(ctx, cb.Options)
 		diags.Append(d...)
 		tf.Checkbox = &CheckboxModel{
 			QuestionText: types.StringValue(cb.QuestionText),
-			Options:      opts,
+			Options:      optsList,
+			Option:       optionBlocks,
 			Required:     types.BoolValue(cb.Required),
+			Shuffle:      types.BoolValue(cb.Shuffle),
+			HasOther:     types.BoolValue(cb.HasOther),
 		}
 		if cb.Grading != nil {
 			tf.Checkbox.Grading = convertGradingToTF(cb.Grading)
@@ -662,7 +771,10 @@ func itemObjectType() types.ObjectType {
 				AttrTypes: map[string]attr.Type{
 					"question_text": types.StringType,
 					"options":       types.ListType{ElemType: types.StringType},
+					"option":        types.ListType{ElemType: types.ObjectType{AttrTypes: choiceOptionAttrTypes()}},
 					"required":      types.BoolType,
+					"shuffle":       types.BoolType,
+					"has_other":     types.BoolType,
 					"grading":       gradingObjectType(),
 				},
 			},
@@ -684,7 +796,9 @@ func itemObjectType() types.ObjectType {
 				AttrTypes: map[string]attr.Type{
 					"question_text": types.StringType,
 					"options":       types.ListType{ElemType: types.StringType},
+					"option":        types.ListType{ElemType: types.ObjectType{AttrTypes: choiceOptionAttrTypes()}},
 					"required":      types.BoolType,
+					"shuffle":       types.BoolType,
 					"grading":       gradingObjectType(),
 				},
 			},
@@ -692,7 +806,10 @@ func itemObjectType() types.ObjectType {
 				AttrTypes: map[string]attr.Type{
 					"question_text": types.StringType,
 					"options":       types.ListType{ElemType: types.StringType},
+					"option":        types.ListType{ElemType: types.ObjectType{AttrTypes: choiceOptionAttrTypes()}},
 					"required":      types.BoolType,
+					"shuffle":       types.BoolType,
+					"has_other":     types.BoolType,
 					"grading":       gradingObjectType(),
 				},
 			},

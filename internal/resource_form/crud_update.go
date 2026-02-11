@@ -214,6 +214,7 @@ func (r *FormResource) updateReplaceAll(
 ) (map[string]string, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	createdKeyMap := map[string]string{}
+	var desiredItems []convert.ItemModel
 
 	conflictPolicy := "overwrite"
 	if !plan.ConflictPolicy.IsNull() && !plan.ConflictPolicy.IsUnknown() && plan.ConflictPolicy.ValueString() != "" {
@@ -271,6 +272,7 @@ func (r *FormResource) updateReplaceAll(
 		if diags.HasError() {
 			return nil, diags
 		}
+		desiredItems = convertItems
 
 		if len(convertItems) > 0 || existingItemCount > 0 {
 			tflog.Debug(ctx, "replacing items", map[string]interface{}{
@@ -354,6 +356,14 @@ func (r *FormResource) updateReplaceAll(
 			if derr != nil {
 				diags.AddWarning("Item Key Correlation Failed", derr.Error())
 			}
+		}
+	}
+
+	// Apply go_to_section_* navigation updates after replace_all creates.
+	if len(desiredItems) > 0 && len(createdKeyMap) > 0 {
+		if navDiags := r.applyChoiceNavigationUpdates(ctx, state.ID.ValueString(), desiredItems, createdKeyMap); navDiags.HasError() {
+			diags.Append(navDiags...)
+			return nil, diags
 		}
 	}
 
@@ -475,6 +485,13 @@ func (r *FormResource) updateTargeted(
 		if key != "" && gid != "" {
 			stateKeyToID[key] = gid
 		}
+	}
+
+	// Resolve known section references using existing state mappings.
+	// Missing keys are allowed here because the target section may be created later in this apply.
+	if err := convert.ResolveChoiceOptionSectionIDs(desiredItems, stateKeyToID, true); err != nil {
+		diags.AddError("Resolve Choice Navigation Failed", err.Error())
+		return nil, diags
 	}
 
 	planKeySeen := make(map[string]bool, len(planItems))
@@ -732,6 +749,12 @@ func (r *FormResource) updateTargeted(
 		for gid, k := range createdKeyMap {
 			keyMap[gid] = k
 		}
+	}
+
+	// Apply go_to_section_* navigation updates after any creates so section IDs are resolvable.
+	if navDiags := r.applyChoiceNavigationUpdates(ctx, state.ID.ValueString(), desiredItems, keyMap); navDiags.HasError() {
+		diags.Append(navDiags...)
+		return nil, diags
 	}
 
 	return keyMap, diags

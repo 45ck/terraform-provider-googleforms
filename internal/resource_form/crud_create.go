@@ -67,6 +67,7 @@ func (r *FormResource) Create(
 	// Step 3: Build batch update requests for all settings and items.
 	var requests []*forms.Request
 	var createKeys []string
+	var desiredItems []convert.ItemModel
 
 	// Always send title+description via batchUpdate to ensure description is set.
 	description := plan.Description.ValueString()
@@ -100,6 +101,7 @@ func (r *FormResource) Create(
 		if resp.Diagnostics.HasError() {
 			return
 		}
+		desiredItems = convertItems
 
 		if len(convertItems) > 0 {
 			var planItems []ItemModel
@@ -237,6 +239,25 @@ func (r *FormResource) Create(
 			if i < len(planItems) {
 				keyMap[apiItem.ItemId] = planItems[i].ItemKey.ValueString()
 			}
+		}
+	}
+
+	// Step 7b: Apply choice navigation updates (go_to_section_key/go_to_section_id).
+	if len(desiredItems) > 0 && keyMap != nil {
+		diags := r.applyChoiceNavigationUpdates(ctx, formID, desiredItems, keyMap)
+		resp.Diagnostics.Append(diags...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
+
+		// Re-read after applying navigation updates so state reflects them.
+		finalForm, err = r.client.Forms.Get(ctx, formID)
+		if err != nil {
+			resp.Diagnostics.AddError(
+				"Error Reading Google Form After Navigation Update",
+				fmt.Sprintf("Form was created (ID: %s) but could not read back final state: %s", formID, err),
+			)
+			return
 		}
 	}
 

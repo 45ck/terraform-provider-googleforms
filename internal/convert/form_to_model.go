@@ -34,7 +34,7 @@ func FormToModel(form *forms.Form, existingKeyMap map[string]string) (*FormModel
 
 	for i, apiItem := range form.Items {
 		itemKey := resolveItemKey(apiItem.ItemId, i, existingKeyMap)
-		converted, err := FormItemToItemModel(apiItem, itemKey)
+		converted, err := FormItemToItemModel(apiItem, itemKey, existingKeyMap)
 		if err != nil {
 			return nil, fmt.Errorf("item[%d] (%s): %w", i, apiItem.ItemId, err)
 		}
@@ -60,7 +60,7 @@ func resolveItemKey(googleID string, index int, keyMap map[string]string) string
 
 // FormItemToItemModel converts a single Forms API Item into a convert.ItemModel.
 // Returns nil (without error) for truly unsupported item types (images, videos).
-func FormItemToItemModel(item *forms.Item, itemKey string) (*ItemModel, error) {
+func FormItemToItemModel(item *forms.Item, itemKey string, keyMap map[string]string) (*ItemModel, error) {
 	model := &ItemModel{
 		Title:        item.Title,
 		ItemKey:      itemKey,
@@ -167,11 +167,11 @@ func FormItemToItemModel(item *forms.Item, itemKey string) (*ItemModel, error) {
 
 	switch {
 	case q.ChoiceQuestion != nil && q.ChoiceQuestion.Type == "RADIO":
-		model.MultipleChoice = convertChoiceQuestion(item.Title, q)
+		model.MultipleChoice = convertChoiceQuestion(item.Title, q, keyMap)
 	case q.ChoiceQuestion != nil && q.ChoiceQuestion.Type == "DROP_DOWN":
-		model.Dropdown = convertDropdownQuestion(item.Title, q)
+		model.Dropdown = convertDropdownQuestion(item.Title, q, keyMap)
 	case q.ChoiceQuestion != nil && q.ChoiceQuestion.Type == "CHECKBOX":
-		model.Checkbox = convertCheckboxQuestion(item.Title, q)
+		model.Checkbox = convertCheckboxQuestion(item.Title, q, keyMap)
 	case q.TextQuestion != nil && !q.TextQuestion.Paragraph:
 		model.ShortAnswer = convertShortAnswer(item.Title, q)
 	case q.TextQuestion != nil && q.TextQuestion.Paragraph:
@@ -209,15 +209,14 @@ func FormItemToItemModel(item *forms.Item, itemKey string) (*ItemModel, error) {
 }
 
 // convertChoiceQuestion maps a RADIO ChoiceQuestion to MultipleChoiceBlock.
-func convertChoiceQuestion(title string, q *forms.Question) *MultipleChoiceBlock {
-	opts := make([]string, len(q.ChoiceQuestion.Options))
-	for i, o := range q.ChoiceQuestion.Options {
-		opts[i] = o.Value
-	}
+func convertChoiceQuestion(title string, q *forms.Question, keyMap map[string]string) *MultipleChoiceBlock {
+	opts, hasOther := convertChoiceOptions(q.ChoiceQuestion.Options, keyMap)
 	mc := &MultipleChoiceBlock{
 		QuestionText: title,
 		Options:      opts,
 		Required:     q.Required,
+		Shuffle:      q.ChoiceQuestion.Shuffle,
+		HasOther:     hasOther,
 	}
 	mc.Grading = convertGrading(q.Grading)
 	return mc
@@ -244,33 +243,56 @@ func convertParagraph(title string, q *forms.Question) *ParagraphBlock {
 }
 
 // convertDropdownQuestion maps a DROP_DOWN ChoiceQuestion to DropdownBlock.
-func convertDropdownQuestion(title string, q *forms.Question) *DropdownBlock {
-	opts := make([]string, len(q.ChoiceQuestion.Options))
-	for i, o := range q.ChoiceQuestion.Options {
-		opts[i] = o.Value
-	}
+func convertDropdownQuestion(title string, q *forms.Question, keyMap map[string]string) *DropdownBlock {
+	opts, _ := convertChoiceOptions(q.ChoiceQuestion.Options, keyMap)
 	dd := &DropdownBlock{
 		QuestionText: title,
 		Options:      opts,
 		Required:     q.Required,
+		Shuffle:      q.ChoiceQuestion.Shuffle,
 	}
 	dd.Grading = convertGrading(q.Grading)
 	return dd
 }
 
 // convertCheckboxQuestion maps a CHECKBOX ChoiceQuestion to CheckboxBlock.
-func convertCheckboxQuestion(title string, q *forms.Question) *CheckboxBlock {
-	opts := make([]string, len(q.ChoiceQuestion.Options))
-	for i, o := range q.ChoiceQuestion.Options {
-		opts[i] = o.Value
-	}
+func convertCheckboxQuestion(title string, q *forms.Question, keyMap map[string]string) *CheckboxBlock {
+	opts, hasOther := convertChoiceOptions(q.ChoiceQuestion.Options, keyMap)
 	cb := &CheckboxBlock{
 		QuestionText: title,
 		Options:      opts,
 		Required:     q.Required,
+		Shuffle:      q.ChoiceQuestion.Shuffle,
+		HasOther:     hasOther,
 	}
 	cb.Grading = convertGrading(q.Grading)
 	return cb
+}
+
+func convertChoiceOptions(apiOpts []*forms.Option, keyMap map[string]string) ([]ChoiceOption, bool) {
+	opts := make([]ChoiceOption, 0, len(apiOpts))
+	hasOther := false
+	for _, o := range apiOpts {
+		if o == nil {
+			continue
+		}
+		if o.IsOther {
+			hasOther = true
+			continue
+		}
+		co := ChoiceOption{
+			Value:         o.Value,
+			GoToAction:    o.GoToAction,
+			GoToSectionID: o.GoToSectionId,
+		}
+		if o.GoToSectionId != "" && keyMap != nil {
+			if k, ok := keyMap[o.GoToSectionId]; ok {
+				co.GoToSectionKey = k
+			}
+		}
+		opts = append(opts, co)
+	}
+	return opts, hasOther
 }
 
 // convertDateQuestion maps a DateQuestion (no time) to DateBlock.

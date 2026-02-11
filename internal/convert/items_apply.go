@@ -78,11 +78,8 @@ func ApplyItemModelToExistingItem(existing *forms.Item, desired ItemModel) (bool
 		q.FileUploadQuestion = nil
 		q.RowQuestion = nil
 
-		opts := make([]*forms.Option, len(desired.MultipleChoice.Options))
-		for i, v := range desired.MultipleChoice.Options {
-			opts[i] = &forms.Option{Value: v}
-		}
-		q.ChoiceQuestion.Options = opts
+		q.ChoiceQuestion.Options = choiceOptionsToAPI(desired.MultipleChoice.Options, desired.MultipleChoice.HasOther)
+		q.ChoiceQuestion.Shuffle = desired.MultipleChoice.Shuffle
 		if desired.MultipleChoice.Grading == nil {
 			q.Grading = nil
 		} else {
@@ -113,11 +110,8 @@ func ApplyItemModelToExistingItem(existing *forms.Item, desired ItemModel) (bool
 		q.FileUploadQuestion = nil
 		q.RowQuestion = nil
 
-		opts := make([]*forms.Option, len(desired.Dropdown.Options))
-		for i, v := range desired.Dropdown.Options {
-			opts[i] = &forms.Option{Value: v}
-		}
-		q.ChoiceQuestion.Options = opts
+		q.ChoiceQuestion.Options = choiceOptionsToAPI(desired.Dropdown.Options, false)
+		q.ChoiceQuestion.Shuffle = desired.Dropdown.Shuffle
 		if desired.Dropdown.Grading == nil {
 			q.Grading = nil
 		} else {
@@ -148,11 +142,8 @@ func ApplyItemModelToExistingItem(existing *forms.Item, desired ItemModel) (bool
 		q.FileUploadQuestion = nil
 		q.RowQuestion = nil
 
-		opts := make([]*forms.Option, len(desired.Checkbox.Options))
-		for i, v := range desired.Checkbox.Options {
-			opts[i] = &forms.Option{Value: v}
-		}
-		q.ChoiceQuestion.Options = opts
+		q.ChoiceQuestion.Options = choiceOptionsToAPI(desired.Checkbox.Options, desired.Checkbox.HasOther)
+		q.ChoiceQuestion.Shuffle = desired.Checkbox.Shuffle
 		if desired.Checkbox.Grading == nil {
 			q.Grading = nil
 		} else {

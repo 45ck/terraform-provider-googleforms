@@ -49,30 +49,36 @@ func (v OptionsRequiredForChoiceValidator) ValidateResource(
 	for _, item := range itemModels {
 		if item.MultipleChoice != nil {
 			opts := item.MultipleChoice.Options
-			if opts.IsNull() || opts.IsUnknown() || len(opts.Elements()) == 0 {
+			optBlocks := item.MultipleChoice.Option
+			if (opts.IsNull() || opts.IsUnknown() || len(opts.Elements()) == 0) &&
+				(optBlocks.IsNull() || optBlocks.IsUnknown() || len(optBlocks.Elements()) == 0) {
 				resp.Diagnostics.AddError(
 					"Missing Options",
-					"A multiple_choice question requires at least one option.",
+					"A multiple_choice question requires at least one option (options or option blocks).",
 				)
 				return
 			}
 		}
 		if item.Dropdown != nil {
 			opts := item.Dropdown.Options
-			if opts.IsNull() || opts.IsUnknown() || len(opts.Elements()) == 0 {
+			optBlocks := item.Dropdown.Option
+			if (opts.IsNull() || opts.IsUnknown() || len(opts.Elements()) == 0) &&
+				(optBlocks.IsNull() || optBlocks.IsUnknown() || len(optBlocks.Elements()) == 0) {
 				resp.Diagnostics.AddError(
 					"Missing Options",
-					"A dropdown question requires at least one option.",
+					"A dropdown question requires at least one option (options or option blocks).",
 				)
 				return
 			}
 		}
 		if item.Checkbox != nil {
 			opts := item.Checkbox.Options
-			if opts.IsNull() || opts.IsUnknown() || len(opts.Elements()) == 0 {
+			optBlocks := item.Checkbox.Option
+			if (opts.IsNull() || opts.IsUnknown() || len(opts.Elements()) == 0) &&
+				(optBlocks.IsNull() || optBlocks.IsUnknown() || len(optBlocks.Elements()) == 0) {
 				resp.Diagnostics.AddError(
 					"Missing Options",
-					"A checkbox question requires at least one option.",
+					"A checkbox question requires at least one option (options or option blocks).",
 				)
 				return
 			}
@@ -149,13 +155,13 @@ func (v CorrectAnswerInOptionsValidator) ValidateResource(
 
 	for _, item := range itemModels {
 		if item.MultipleChoice != nil && item.MultipleChoice.Grading != nil {
-			checkCorrectAnswerInChoiceOptions(ctx, item.MultipleChoice.Grading, item.MultipleChoice.Options, resp)
+			checkCorrectAnswerInChoiceOptions(ctx, item.MultipleChoice.Grading, item.MultipleChoice.Options, item.MultipleChoice.Option, resp)
 			if resp.Diagnostics.HasError() {
 				return
 			}
 		}
 		if item.Dropdown != nil && item.Dropdown.Grading != nil {
-			checkCorrectAnswerInChoiceOptions(ctx, item.Dropdown.Grading, item.Dropdown.Options, resp)
+			checkCorrectAnswerInChoiceOptions(ctx, item.Dropdown.Grading, item.Dropdown.Options, item.Dropdown.Option, resp)
 			if resp.Diagnostics.HasError() {
 				return
 			}
@@ -168,6 +174,7 @@ func checkCorrectAnswerInChoiceOptions(
 	ctx context.Context,
 	grading *GradingModel,
 	optionsList types.List,
+	optionBlocks types.List,
 	resp *resource.ValidateConfigResponse,
 ) {
 	answer := grading.CorrectAnswer
@@ -177,16 +184,28 @@ func checkCorrectAnswerInChoiceOptions(
 
 	answerVal := answer.ValueString()
 
-	var options []types.String
-	resp.Diagnostics.Append(optionsList.ElementsAs(ctx, &options, false)...)
-
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	for _, opt := range options {
-		if opt.ValueString() == answerVal {
+	// Prefer option blocks if present.
+	if !optionBlocks.IsNull() && !optionBlocks.IsUnknown() && len(optionBlocks.Elements()) > 0 {
+		var opts []ChoiceOptionModel
+		resp.Diagnostics.Append(optionBlocks.ElementsAs(ctx, &opts, false)...)
+		if resp.Diagnostics.HasError() {
 			return
+		}
+		for _, opt := range opts {
+			if opt.Value.ValueString() == answerVal {
+				return
+			}
+		}
+	} else {
+		var options []types.String
+		resp.Diagnostics.Append(optionsList.ElementsAs(ctx, &options, false)...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
+		for _, opt := range options {
+			if opt.ValueString() == answerVal {
+				return
+			}
 		}
 	}
 
@@ -283,4 +302,118 @@ func itemHasGrading(item ItemModel) bool {
 		return true
 	}
 	return false
+}
+
+// ---------------------------------------------------------------------------
+// 8. ChoiceOptionNavigationValidator
+// ---------------------------------------------------------------------------
+
+// ChoiceOptionNavigationValidator validates mutual exclusion between options and
+// option blocks, plus basic section-navigation correctness.
+type ChoiceOptionNavigationValidator struct{}
+
+func (v ChoiceOptionNavigationValidator) Description(_ context.Context) string {
+	return "Validates choice option blocks, including section navigation references."
+}
+
+func (v ChoiceOptionNavigationValidator) MarkdownDescription(ctx context.Context) string {
+	return v.Description(ctx)
+}
+
+func (v ChoiceOptionNavigationValidator) ValidateResource(
+	ctx context.Context,
+	req resource.ValidateConfigRequest,
+	resp *resource.ValidateConfigResponse,
+) {
+	var items types.List
+	resp.Diagnostics.Append(req.Config.GetAttribute(ctx, path.Root("item"), &items)...)
+	if resp.Diagnostics.HasError() || items.IsNull() || items.IsUnknown() {
+		return
+	}
+
+	var itemModels []ItemModel
+	resp.Diagnostics.Append(items.ElementsAs(ctx, &itemModels, false)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	sections := make(map[string]bool)
+	for _, it := range itemModels {
+		if it.SectionHeader != nil {
+			sections[it.ItemKey.ValueString()] = true
+		}
+	}
+
+	validateChoice := func(itemKey, kind string, opts types.List, optBlocks types.List) {
+		hasOpts := !opts.IsNull() && !opts.IsUnknown() && len(opts.Elements()) > 0
+		hasBlocks := !optBlocks.IsNull() && !optBlocks.IsUnknown() && len(optBlocks.Elements()) > 0
+
+		if hasOpts && hasBlocks {
+			resp.Diagnostics.AddError(
+				"Invalid Choice Options Configuration",
+				kind+" item "+itemKey+" cannot set both options and option blocks.",
+			)
+			return
+		}
+
+		if !hasBlocks {
+			return
+		}
+
+		var blocks []ChoiceOptionModel
+		resp.Diagnostics.Append(optBlocks.ElementsAs(ctx, &blocks, false)...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
+
+		for _, b := range blocks {
+			hasAction := !b.GoToAction.IsNull() && !b.GoToAction.IsUnknown() && b.GoToAction.ValueString() != ""
+			hasKey := !b.GoToSectionKey.IsNull() && !b.GoToSectionKey.IsUnknown() && b.GoToSectionKey.ValueString() != ""
+			hasID := !b.GoToSectionID.IsNull() && !b.GoToSectionID.IsUnknown() && b.GoToSectionID.ValueString() != ""
+
+			if hasKey && hasID {
+				resp.Diagnostics.AddError(
+					"Invalid Option Navigation",
+					"Option blocks must not set both go_to_section_key and go_to_section_id.",
+				)
+				return
+			}
+			if hasAction && (hasKey || hasID) {
+				resp.Diagnostics.AddError(
+					"Invalid Option Navigation",
+					"Option blocks must not set go_to_action together with go_to_section_key/go_to_section_id.",
+				)
+				return
+			}
+			if hasKey && !sections[b.GoToSectionKey.ValueString()] {
+				resp.Diagnostics.AddError(
+					"Invalid Option Navigation",
+					"go_to_section_key must reference an item_key with a section_header block in the same form configuration.",
+				)
+				return
+			}
+		}
+	}
+
+	for _, it := range itemModels {
+		key := it.ItemKey.ValueString()
+		if it.MultipleChoice != nil {
+			validateChoice(key, "multiple_choice", it.MultipleChoice.Options, it.MultipleChoice.Option)
+			if resp.Diagnostics.HasError() {
+				return
+			}
+		}
+		if it.Dropdown != nil {
+			validateChoice(key, "dropdown", it.Dropdown.Options, it.Dropdown.Option)
+			if resp.Diagnostics.HasError() {
+				return
+			}
+		}
+		if it.Checkbox != nil {
+			validateChoice(key, "checkbox", it.Checkbox.Options, it.Checkbox.Option)
+			if resp.Diagnostics.HasError() {
+				return
+			}
+		}
+	}
 }

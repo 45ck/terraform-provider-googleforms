@@ -58,7 +58,10 @@ type ItemModel struct {
 type MultipleChoiceModel struct {
 	QuestionText types.String  `tfsdk:"question_text"`
 	Options      types.List    `tfsdk:"options"`
+	Option       types.List    `tfsdk:"option"`
 	Required     types.Bool    `tfsdk:"required"`
+	Shuffle      types.Bool    `tfsdk:"shuffle"`
+	HasOther     types.Bool    `tfsdk:"has_other"`
 	Grading      *GradingModel `tfsdk:"grading"`
 }
 
@@ -80,7 +83,9 @@ type ParagraphModel struct {
 type DropdownModel struct {
 	QuestionText types.String  `tfsdk:"question_text"`
 	Options      types.List    `tfsdk:"options"`
+	Option       types.List    `tfsdk:"option"`
 	Required     types.Bool    `tfsdk:"required"`
+	Shuffle      types.Bool    `tfsdk:"shuffle"`
 	Grading      *GradingModel `tfsdk:"grading"`
 }
 
@@ -88,8 +93,19 @@ type DropdownModel struct {
 type CheckboxModel struct {
 	QuestionText types.String  `tfsdk:"question_text"`
 	Options      types.List    `tfsdk:"options"`
+	Option       types.List    `tfsdk:"option"`
 	Required     types.Bool    `tfsdk:"required"`
+	Shuffle      types.Bool    `tfsdk:"shuffle"`
+	HasOther     types.Bool    `tfsdk:"has_other"`
 	Grading      *GradingModel `tfsdk:"grading"`
+}
+
+type ChoiceOptionModel struct {
+	Value types.String `tfsdk:"value"`
+
+	GoToAction     types.String `tfsdk:"go_to_action"`
+	GoToSectionKey types.String `tfsdk:"go_to_section_key"`
+	GoToSectionID  types.String `tfsdk:"go_to_section_id"`
 }
 
 type MultipleChoiceGridModel struct {

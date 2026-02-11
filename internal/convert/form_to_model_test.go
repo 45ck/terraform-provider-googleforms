@@ -131,8 +131,8 @@ func TestFormToModel_WithMultipleChoiceItem(t *testing.T) {
 	if len(item.MultipleChoice.Options) != 2 {
 		t.Fatalf("options = %d, want 2", len(item.MultipleChoice.Options))
 	}
-	if item.MultipleChoice.Options[0] != "Red" {
-		t.Errorf("option[0] = %q, want Red", item.MultipleChoice.Options[0])
+	if item.MultipleChoice.Options[0].Value != "Red" {
+		t.Errorf("option[0] = %q, want Red", item.MultipleChoice.Options[0].Value)
 	}
 }
 
@@ -589,7 +589,7 @@ func TestFormItemToItemModel_NilQuestionItem(t *testing.T) {
 		Title:  "Section Header",
 	}
 
-	result, err := FormItemToItemModel(item, "key1")
+	result, err := FormItemToItemModel(item, "key1", nil)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}

@@ -132,16 +132,14 @@ func buildCheckboxGrid(fi *forms.Item, g *CheckboxGridBlock) {
 
 // buildMultipleChoice populates a forms.Item with a ChoiceQuestion (RADIO).
 func buildMultipleChoice(fi *forms.Item, mc *MultipleChoiceBlock) {
-	opts := make([]*forms.Option, len(mc.Options))
-	for i, v := range mc.Options {
-		opts[i] = &forms.Option{Value: v}
-	}
+	opts := choiceOptionsToAPI(mc.Options, mc.HasOther)
 
 	q := &forms.Question{
 		Required: mc.Required,
 		ChoiceQuestion: &forms.ChoiceQuestion{
 			Type:    "RADIO",
 			Options: opts,
+			Shuffle: mc.Shuffle,
 		},
 	}
 	applyGrading(q, mc.Grading)
@@ -170,16 +168,14 @@ func buildParagraph(fi *forms.Item, p *ParagraphBlock) {
 
 // buildDropdown populates a forms.Item with a ChoiceQuestion (DROP_DOWN).
 func buildDropdown(fi *forms.Item, dd *DropdownBlock) {
-	opts := make([]*forms.Option, len(dd.Options))
-	for i, v := range dd.Options {
-		opts[i] = &forms.Option{Value: v}
-	}
+	opts := choiceOptionsToAPI(dd.Options, false)
 
 	q := &forms.Question{
 		Required: dd.Required,
 		ChoiceQuestion: &forms.ChoiceQuestion{
 			Type:    "DROP_DOWN",
 			Options: opts,
+			Shuffle: dd.Shuffle,
 		},
 	}
 	applyGrading(q, dd.Grading)
@@ -188,20 +184,37 @@ func buildDropdown(fi *forms.Item, dd *DropdownBlock) {
 
 // buildCheckbox populates a forms.Item with a ChoiceQuestion (CHECKBOX).
 func buildCheckbox(fi *forms.Item, cb *CheckboxBlock) {
-	opts := make([]*forms.Option, len(cb.Options))
-	for i, v := range cb.Options {
-		opts[i] = &forms.Option{Value: v}
-	}
+	opts := choiceOptionsToAPI(cb.Options, cb.HasOther)
 
 	q := &forms.Question{
 		Required: cb.Required,
 		ChoiceQuestion: &forms.ChoiceQuestion{
 			Type:    "CHECKBOX",
 			Options: opts,
+			Shuffle: cb.Shuffle,
 		},
 	}
 	applyGrading(q, cb.Grading)
 	fi.QuestionItem = &forms.QuestionItem{Question: q}
+}
+
+func choiceOptionsToAPI(opts []ChoiceOption, includeOther bool) []*forms.Option {
+	out := make([]*forms.Option, 0, len(opts)+1)
+	for _, o := range opts {
+		apiOpt := &forms.Option{Value: o.Value}
+		if o.GoToAction != "" && o.GoToAction != "GO_TO_ACTION_UNSPECIFIED" {
+			apiOpt.GoToAction = o.GoToAction
+		}
+		if o.GoToSectionID != "" {
+			apiOpt.GoToSectionId = o.GoToSectionID
+		}
+		out = append(out, apiOpt)
+	}
+	if includeOther {
+		// Note: Forms API uses IsOther to represent the "Other" option; Value is still required.
+		out = append(out, &forms.Option{Value: "Other", IsOther: true})
+	}
+	return out
 }
 
 // buildDate populates a forms.Item with a DateQuestion (no time).

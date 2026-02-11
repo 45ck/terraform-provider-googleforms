@@ -81,13 +81,16 @@ Read-Only:
 
 Required:
 
-- `options` (List of String) List of answer options. Must have at least one.
 - `question_text` (String) The question text.
 
 Optional:
 
 - `grading` (Block, Optional) Quiz grading options. Requires quiz = true on the form. (see [below for nested schema](#nestedblock--item--checkbox--grading))
+- `has_other` (Boolean) If true, includes an "Other" option (not represented in options/option).
+- `option` (Block List) Option blocks allow advanced choice configuration such as section navigation. Mutually exclusive with options. (see [below for nested schema](#nestedblock--item--checkbox--option))
+- `options` (List of String) List of answer options. Mutually exclusive with option blocks.
 - `required` (Boolean) Whether the question is required.
+- `shuffle` (Boolean) If true, options are displayed in random order for each respondent.
 
 <a id="nestedblock--item--checkbox--grading"></a>
 ### Nested Schema for `item.checkbox.grading`
@@ -101,6 +104,20 @@ Optional:
 - `correct_answer` (String) The correct answer. Must match an option value for multiple choice.
 - `feedback_correct` (String) Feedback shown when the answer is correct.
 - `feedback_incorrect` (String) Feedback shown when the answer is incorrect.
+
+
+<a id="nestedblock--item--checkbox--option"></a>
+### Nested Schema for `item.checkbox.option`
+
+Required:
+
+- `value` (String) The choice value as presented to the user.
+
+Optional:
+
+- `go_to_action` (String) Optional navigation action when this option is selected.
+- `go_to_section_id` (String) Optional Google item ID of a section_header item to navigate to (primarily for imported forms).
+- `go_to_section_key` (String) Optional item_key of a section_header item to navigate to when this option is selected.
 
 
 
@@ -151,13 +168,15 @@ Optional:
 
 Required:
 
-- `options` (List of String) List of answer options. Must have at least one.
 - `question_text` (String) The question text.
 
 Optional:
 
 - `grading` (Block, Optional) Quiz grading options. Requires quiz = true on the form. (see [below for nested schema](#nestedblock--item--dropdown--grading))
+- `option` (Block List) Option blocks allow advanced choice configuration such as section navigation. Mutually exclusive with options. (see [below for nested schema](#nestedblock--item--dropdown--option))
+- `options` (List of String) List of answer options. Mutually exclusive with option blocks.
 - `required` (Boolean) Whether the question is required.
+- `shuffle` (Boolean) If true, options are displayed in random order for each respondent.
 
 <a id="nestedblock--item--dropdown--grading"></a>
 ### Nested Schema for `item.dropdown.grading`
@@ -171,6 +190,20 @@ Optional:
 - `correct_answer` (String) The correct answer. Must match an option value for multiple choice.
 - `feedback_correct` (String) Feedback shown when the answer is correct.
 - `feedback_incorrect` (String) Feedback shown when the answer is incorrect.
+
+
+<a id="nestedblock--item--dropdown--option"></a>
+### Nested Schema for `item.dropdown.option`
+
+Required:
+
+- `value` (String) The choice value as presented to the user.
+
+Optional:
+
+- `go_to_action` (String) Optional navigation action when this option is selected.
+- `go_to_section_id` (String) Optional Google item ID of a section_header item to navigate to (primarily for imported forms).
+- `go_to_section_key` (String) Optional item_key of a section_header item to navigate to when this option is selected.
 
 
 
@@ -216,13 +249,16 @@ Read-Only:
 
 Required:
 
-- `options` (List of String) List of answer options. Must have at least one.
 - `question_text` (String) The question text.
 
 Optional:
 
 - `grading` (Block, Optional) Quiz grading options. Requires quiz = true on the form. (see [below for nested schema](#nestedblock--item--multiple_choice--grading))
+- `has_other` (Boolean) If true, includes an "Other" option (not represented in options/option).
+- `option` (Block List) Option blocks allow advanced choice configuration such as section navigation. Mutually exclusive with options. (see [below for nested schema](#nestedblock--item--multiple_choice--option))
+- `options` (List of String) List of answer options. Mutually exclusive with option blocks.
 - `required` (Boolean) Whether the question is required.
+- `shuffle` (Boolean) If true, options are displayed in random order for each respondent.
 
 <a id="nestedblock--item--multiple_choice--grading"></a>
 ### Nested Schema for `item.multiple_choice.grading`
@@ -236,6 +272,20 @@ Optional:
 - `correct_answer` (String) The correct answer. Must match an option value for multiple choice.
 - `feedback_correct` (String) Feedback shown when the answer is correct.
 - `feedback_incorrect` (String) Feedback shown when the answer is incorrect.
+
+
+<a id="nestedblock--item--multiple_choice--option"></a>
+### Nested Schema for `item.multiple_choice.option`
+
+Required:
+
+- `value` (String) The choice value as presented to the user.
+
+Optional:
+
+- `go_to_action` (String) Optional navigation action when this option is selected.
+- `go_to_section_id` (String) Optional Google item ID of a section_header item to navigate to (primarily for imported forms).
+- `go_to_section_key` (String) Optional item_key of a section_header item to navigate to when this option is selected.
 
 
 

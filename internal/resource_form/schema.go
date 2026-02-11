@@ -213,6 +213,7 @@ func itemAttributes() map[string]schema.Attribute {
 // itemBlocks returns the nested block definitions for question types.
 func itemBlocks() map[string]schema.Block {
 	gradingBlock := gradingBlockSchema()
+	choiceOptionBlock := choiceOptionListBlockSchema()
 	return map[string]schema.Block{
 		"multiple_choice": schema.SingleNestedBlock{
 			Description: "A multiple choice (radio button) question.",
@@ -222,9 +223,21 @@ func itemBlocks() map[string]schema.Block {
 					Description: "The question text.",
 				},
 				"options": schema.ListAttribute{
-					Required:    true,
+					Optional:    true,
 					ElementType: types.StringType,
-					Description: "List of answer options. Must have at least one.",
+					Description: "List of answer options. Mutually exclusive with option blocks.",
+				},
+				"shuffle": schema.BoolAttribute{
+					Optional:    true,
+					Computed:    true,
+					Default:     booldefault.StaticBool(false),
+					Description: "If true, options are displayed in random order for each respondent.",
+				},
+				"has_other": schema.BoolAttribute{
+					Optional:    true,
+					Computed:    true,
+					Default:     booldefault.StaticBool(false),
+					Description: "If true, includes an \"Other\" option (not represented in options/option).",
 				},
 				"required": schema.BoolAttribute{
 					Optional:    true,
@@ -234,6 +247,7 @@ func itemBlocks() map[string]schema.Block {
 				},
 			},
 			Blocks: map[string]schema.Block{
+				"option":  choiceOptionBlock,
 				"grading": gradingBlock,
 			},
 		},
@@ -281,9 +295,15 @@ func itemBlocks() map[string]schema.Block {
 					Description: "The question text.",
 				},
 				"options": schema.ListAttribute{
-					Required:    true,
+					Optional:    true,
 					ElementType: types.StringType,
-					Description: "List of answer options. Must have at least one.",
+					Description: "List of answer options. Mutually exclusive with option blocks.",
+				},
+				"shuffle": schema.BoolAttribute{
+					Optional:    true,
+					Computed:    true,
+					Default:     booldefault.StaticBool(false),
+					Description: "If true, options are displayed in random order for each respondent.",
 				},
 				"required": schema.BoolAttribute{
 					Optional:    true,
@@ -293,6 +313,7 @@ func itemBlocks() map[string]schema.Block {
 				},
 			},
 			Blocks: map[string]schema.Block{
+				"option":  choiceOptionBlock,
 				"grading": gradingBlock,
 			},
 		},
@@ -304,9 +325,21 @@ func itemBlocks() map[string]schema.Block {
 					Description: "The question text.",
 				},
 				"options": schema.ListAttribute{
-					Required:    true,
+					Optional:    true,
 					ElementType: types.StringType,
-					Description: "List of answer options. Must have at least one.",
+					Description: "List of answer options. Mutually exclusive with option blocks.",
+				},
+				"shuffle": schema.BoolAttribute{
+					Optional:    true,
+					Computed:    true,
+					Default:     booldefault.StaticBool(false),
+					Description: "If true, options are displayed in random order for each respondent.",
+				},
+				"has_other": schema.BoolAttribute{
+					Optional:    true,
+					Computed:    true,
+					Default:     booldefault.StaticBool(false),
+					Description: "If true, includes an \"Other\" option (not represented in options/option).",
 				},
 				"required": schema.BoolAttribute{
 					Optional:    true,
@@ -316,6 +349,7 @@ func itemBlocks() map[string]schema.Block {
 				},
 			},
 			Blocks: map[string]schema.Block{
+				"option":  choiceOptionBlock,
 				"grading": gradingBlock,
 			},
 		},
@@ -663,6 +697,36 @@ func gradingBlockSchema() schema.SingleNestedBlock {
 			"feedback_incorrect": schema.StringAttribute{
 				Optional:    true,
 				Description: "Feedback shown when the answer is incorrect.",
+			},
+		},
+	}
+}
+
+func choiceOptionListBlockSchema() schema.ListNestedBlock {
+	return schema.ListNestedBlock{
+		Description: "Option blocks allow advanced choice configuration such as section navigation. Mutually exclusive with options.",
+		NestedObject: schema.NestedBlockObject{
+			Attributes: map[string]schema.Attribute{
+				"value": schema.StringAttribute{
+					Required:    true,
+					Description: "The choice value as presented to the user.",
+				},
+				"go_to_action": schema.StringAttribute{
+					Optional: true,
+					Validators: []validator.String{
+						stringvalidator.OneOf("NEXT_SECTION", "RESTART_FORM", "SUBMIT_FORM"),
+					},
+					Description: "Optional navigation action when this option is selected.",
+				},
+				"go_to_section_key": schema.StringAttribute{
+					Optional:    true,
+					Description: "Optional item_key of a section_header item to navigate to when this option is selected.",
+				},
+				"go_to_section_id": schema.StringAttribute{
+					Optional:    true,
+					Computed:    true,
+					Description: "Optional Google item ID of a section_header item to navigate to (primarily for imported forms).",
+				},
 			},
 		},
 	}

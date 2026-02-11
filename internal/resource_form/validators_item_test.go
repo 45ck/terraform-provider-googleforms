@@ -176,11 +176,11 @@ func TestGradingRequiresQuiz_Paragraph_Error(t *testing.T) {
 // ConfigValidators wiring
 // ---------------------------------------------------------------------------
 
-func TestConfigValidators_ReturnsAllSeven(t *testing.T) {
+func TestConfigValidators_ReturnsAllEight(t *testing.T) {
 	t.Parallel()
 	r := &FormResource{}
 	validators := r.ConfigValidators(context.Background())
-	if len(validators) != 7 {
-		t.Fatalf("expected 7 ConfigValidators, got %d", len(validators))
+	if len(validators) != 8 {
+		t.Fatalf("expected 8 ConfigValidators, got %d", len(validators))
 	}
 }

@@ -29,6 +29,21 @@ type ItemModel struct {
 	SectionHeader      *SectionHeaderBlock
 }
 
+// ChoiceOption describes a single selectable option in a choice question.
+//
+// For section navigation:
+// - Use GoToAction for built-in actions (NEXT_SECTION, RESTART_FORM, SUBMIT_FORM).
+// - Use GoToSectionKey or GoToSectionID to route to a specific section header item.
+//
+// GoToSectionKey is resolved to GoToSectionID at runtime (after items have IDs).
+type ChoiceOption struct {
+	Value string
+
+	GoToAction     string
+	GoToSectionKey string
+	GoToSectionID  string
+}
+
 // MultipleChoiceGridBlock describes a grid question with radio button rows.
 type MultipleChoiceGridBlock struct {
 	QuestionText     string
@@ -52,8 +67,10 @@ type CheckboxGridBlock struct {
 // MultipleChoiceBlock describes a multiple-choice (radio) question.
 type MultipleChoiceBlock struct {
 	QuestionText string
-	Options      []string
+	Options      []ChoiceOption
 	Required     bool
+	Shuffle      bool
+	HasOther     bool
 	Grading      *GradingBlock
 }
 
@@ -74,16 +91,19 @@ type ParagraphBlock struct {
 // DropdownBlock describes a dropdown (select) question.
 type DropdownBlock struct {
 	QuestionText string
-	Options      []string
+	Options      []ChoiceOption
 	Required     bool
+	Shuffle      bool
 	Grading      *GradingBlock
 }
 
 // CheckboxBlock describes a checkbox (multi-select) question.
 type CheckboxBlock struct {
 	QuestionText string
-	Options      []string
+	Options      []ChoiceOption
 	Required     bool
+	Shuffle      bool
+	HasOther     bool
 	Grading      *GradingBlock
 }
 

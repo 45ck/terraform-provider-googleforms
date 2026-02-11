@@ -59,7 +59,7 @@ func (r *FormResource) Configure(
 	r.client = c
 }
 
-// ConfigValidators returns all seven resource-level config validators.
+// ConfigValidators returns all resource-level config validators.
 func (r *FormResource) ConfigValidators(
 	_ context.Context,
 ) []resource.ConfigValidator {
@@ -69,6 +69,7 @@ func (r *FormResource) ConfigValidators(
 		UniqueItemKeyValidator{},
 		ExactlyOneSubBlockValidator{},
 		OptionsRequiredForChoiceValidator{},
+		ChoiceOptionNavigationValidator{},
 		CorrectAnswerInOptionsValidator{},
 		GradingRequiresQuizValidator{},
 	}

@@ -21,6 +21,7 @@ var (
 	_ resource.ConfigValidator = OptionsRequiredForChoiceValidator{}
 	_ resource.ConfigValidator = CorrectAnswerInOptionsValidator{}
 	_ resource.ConfigValidator = GradingRequiresQuizValidator{}
+	_ resource.ConfigValidator = ChoiceOptionNavigationValidator{}
 )
 
 // ---------------------------------------------------------------------------

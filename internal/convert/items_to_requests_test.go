@@ -19,7 +19,7 @@ func TestMultipleChoiceToRequest_Basic(t *testing.T) {
 	item := ItemModel{
 		Title: "Favorite color?",
 		MultipleChoice: &MultipleChoiceBlock{
-			Options: []string{"Red", "Blue", "Green"},
+			Options: []ChoiceOption{{Value: "Red"}, {Value: "Blue"}, {Value: "Green"}},
 		},
 	}
 
@@ -65,7 +65,7 @@ func TestMultipleChoiceToRequest_WithGrading(t *testing.T) {
 	item := ItemModel{
 		Title: "Capital of France?",
 		MultipleChoice: &MultipleChoiceBlock{
-			Options: []string{"London", "Paris", "Berlin"},
+			Options: []ChoiceOption{{Value: "London"}, {Value: "Paris"}, {Value: "Berlin"}},
 			Grading: &GradingBlock{
 				Points:            5,
 				CorrectAnswer:     "Paris",
@@ -107,7 +107,7 @@ func TestMultipleChoiceToRequest_Required(t *testing.T) {
 	item := ItemModel{
 		Title: "Pick one",
 		MultipleChoice: &MultipleChoiceBlock{
-			Options:  []string{"A", "B"},
+			Options:  []ChoiceOption{{Value: "A"}, {Value: "B"}},
 			Required: true,
 		},
 	}
@@ -120,6 +120,47 @@ func TestMultipleChoiceToRequest_Required(t *testing.T) {
 	q := req.CreateItem.Item.QuestionItem.Question
 	if !q.Required {
 		t.Error("expected Required to be true")
+	}
+}
+
+func TestMultipleChoiceToRequest_ShuffleOtherAndNavigation(t *testing.T) {
+	t.Parallel()
+
+	item := ItemModel{
+		Title: "Pick a path",
+		MultipleChoice: &MultipleChoiceBlock{
+			Options: []ChoiceOption{
+				{Value: "Submit", GoToAction: "SUBMIT_FORM"},
+				{Value: "Go to section", GoToSectionID: "sec-1"},
+			},
+			Shuffle:  true,
+			HasOther: true,
+		},
+	}
+
+	req, err := ItemModelToCreateRequest(item, 0)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	q := req.CreateItem.Item.QuestionItem.Question
+	if q.ChoiceQuestion == nil {
+		t.Fatal("expected ChoiceQuestion")
+	}
+	if !q.ChoiceQuestion.Shuffle {
+		t.Fatal("expected shuffle=true")
+	}
+	if len(q.ChoiceQuestion.Options) != 3 {
+		t.Fatalf("options count = %d, want 3", len(q.ChoiceQuestion.Options))
+	}
+	if q.ChoiceQuestion.Options[0].GoToAction != "SUBMIT_FORM" {
+		t.Fatalf("option[0].goToAction=%q, want SUBMIT_FORM", q.ChoiceQuestion.Options[0].GoToAction)
+	}
+	if q.ChoiceQuestion.Options[1].GoToSectionId != "sec-1" {
+		t.Fatalf("option[1].goToSectionId=%q, want sec-1", q.ChoiceQuestion.Options[1].GoToSectionId)
+	}
+	if !q.ChoiceQuestion.Options[2].IsOther {
+		t.Fatal("expected last option to be Other")
 	}
 }
 
@@ -441,7 +482,7 @@ func TestItemsToCreateRequests_MultipleItems_CorrectOrder(t *testing.T) {
 	items := []ItemModel{
 		{Title: "Q1", ShortAnswer: &ShortAnswerBlock{}},
 		{Title: "Q2", Paragraph: &ParagraphBlock{}},
-		{Title: "Q3", MultipleChoice: &MultipleChoiceBlock{Options: []string{"A"}}},
+		{Title: "Q3", MultipleChoice: &MultipleChoiceBlock{Options: []ChoiceOption{{Value: "A"}}}},
 	}
 
 	reqs, err := ItemsToCreateRequests(items)
