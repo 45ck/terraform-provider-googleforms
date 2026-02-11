@@ -37,6 +37,16 @@ export GOOGLE_CREDENTIALS=/path/to/service-account.json
 make test-acc
 ```
 
+#### Windows Notes
+
+Some Windows environments cannot execute Go test binaries from the temp directory (you may see `Access is denied`).
+If that happens, run the Docker-based targets instead:
+
+```bash
+make test-docker
+make docs-docker
+```
+
 ### Code Quality
 
 This project enforces strict quality gates. All checks must pass before merging:
@@ -54,6 +64,12 @@ This project enforces strict quality gates. All checks must pass before merging:
 | Docs | `make docs` | tfplugindocs validation |
 
 Run all checks locally with: `make ci`
+
+If you want a faster local loop that skips mutation testing, coupling checks, and docs regeneration:
+
+```bash
+make ci-fast
+```
 
 ### Commit Messages
 

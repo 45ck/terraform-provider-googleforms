@@ -246,6 +246,8 @@ make test
 make test-acc
 ```
 
+Windows note: if `go test` fails with `Access is denied` due to temp exe execution restrictions, use `make test-docker` and `make docs-docker`.
+
 See [CONTRIBUTING.md](CONTRIBUTING.md) for full development guide.
 
 ## Scope / Non-Goals (For Now)

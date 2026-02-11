@@ -1,0 +1,12 @@
+# Normalize line endings to LF in the repository to reduce cross-platform diffs.
+* text=auto eol=lf
+
+# Keep Windows scripts in CRLF if you add them later.
+*.ps1 text eol=crlf
+*.bat text eol=crlf
+
+# Treat common binaries as binary.
+*.exe binary
+*.dll binary
+*.so binary
+*.dylib binary
