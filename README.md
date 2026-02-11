@@ -3,35 +3,60 @@
 [![Tests](https://github.com/45ck/terraform-provider-googleforms/actions/workflows/test.yml/badge.svg)](https://github.com/45ck/terraform-provider-googleforms/actions/workflows/test.yml)
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
-A Terraform provider for managing Google Forms as infrastructure. Create, update, and delete Google Forms with full lifecycle management using Terraform.
+A Terraform provider for managing Google Forms as infrastructure, with optional Google Drive and Google Sheets helpers for common workflows (folder placement, permissions, response spreadsheets, etc.).
 
-## Features
+## What You Can Manage
 
-- Create and manage Google Forms with HCL configuration
-- Place Forms into Drive folders (and read back parent IDs)
-- Create and manage Google Sheets spreadsheets and tabs
-- Drive folder placement for spreadsheets
-- Write bounded cell ranges with drift detection
-- Sheets `batchUpdate` escape hatch via raw request JSON
-- Forms `batchUpdate` escape hatch via raw request JSON
-- Sheets named ranges, protected ranges, developer metadata
-- Sheets data validation and conditional format rule helpers
-- Drive folder and file helpers (create folders, adopt/rename/move existing files)
-- Drive permission resource for sharing Drive-backed documents
-- Support for multiple choice, short answer, and paragraph questions
-- Quiz mode with grading (correct answers, point values, feedback)
-- Control publish state and response acceptance
-- Raw JSON escape hatch for unsupported question types
-- Import existing Google Forms into Terraform
-- Service account and Application Default Credentials authentication
+This provider is intentionally "typed-first, escape-hatch always":
+
+- Use strongly-typed HCL for common Forms/Sheets/Drive operations.
+- When Google adds API features faster than provider schema can evolve, use `*_batch_update` resources for full-power raw JSON requests.
+
+### Resources
+
+| Area | Resource | Purpose |
+|------|----------|---------|
+| Forms | `googleforms_form` | Typed Form + items (questions), quiz, publish/accept responses, Drive folder placement |
+| Forms | `googleforms_forms_batch_update` | Escape hatch for Forms `forms.batchUpdate` |
+| Forms | `googleforms_response_sheet` | Track/validate Form <-> Spreadsheet association |
+| Sheets | `googleforms_spreadsheet` | Spreadsheet + Drive folder placement |
+| Sheets | `googleforms_sheet` | Sheet/tab within a spreadsheet |
+| Sheets | `googleforms_sheet_values` | Bounded A1 range writes, optional read-back drift detection |
+| Sheets | `googleforms_sheets_batch_update` | Escape hatch for Sheets `spreadsheets.batchUpdate` |
+| Sheets | `googleforms_sheets_named_range` | Named ranges via batchUpdate |
+| Sheets | `googleforms_sheets_protected_range` | Protected ranges via batchUpdate |
+| Sheets | `googleforms_sheets_developer_metadata` | Developer metadata via batchUpdate |
+| Sheets | `googleforms_sheets_data_validation` | Data validation rules (JSON) via batchUpdate |
+| Sheets | `googleforms_sheets_conditional_format_rule` | Conditional format rule (JSON) addressed by index |
+| Drive | `googleforms_drive_folder` | Create/manage Drive folders |
+| Drive | `googleforms_drive_file` | Adopt existing file; rename/move; optional delete-on-destroy |
+| Drive | `googleforms_drive_permission` | Share Drive-backed documents |
+
+### Data Sources
+
+| Area | Data source | Purpose |
+|------|-------------|---------|
+| Forms | `data.googleforms_form` | Read a Form by ID |
+| Drive | `data.googleforms_drive_file` | Read a Drive file by ID |
+| Sheets | `data.googleforms_spreadsheet` | Read a spreadsheet by ID |
+| Sheets | `data.googleforms_sheet_values` | Read sheet values for an A1 range |
+
+## Documentation
+
+- Provider docs: `docs/`
+- Resources: `docs/resources/`
+- Data sources: `docs/data-sources/`
+- Guide: `docs/guides/import-existing-form.md`
 
 ## Quick Start
 
 ### Prerequisites
 
-1. A Google Cloud project with the **Forms API** and **Drive API** enabled
-2. A service account with appropriate permissions
-3. Terraform >= 1.0
+1. A Google Cloud project with the **Forms API** enabled
+2. A Google Cloud project with the **Drive API** enabled (required for folder placement, permissions, and some document operations)
+3. A Google Cloud project with the **Sheets API** enabled (required for spreadsheet resources)
+4. A service account with appropriate permissions
+5. Terraform >= 1.0
 
 ### Provider Configuration
 
@@ -116,7 +141,7 @@ resource "googleforms_form" "quiz" {
 
 ### Example: JSON Escape Hatch
 
-For question types not yet natively supported:
+For question types or settings not yet natively supported, use `content_json`:
 
 ```hcl
 resource "googleforms_form" "advanced" {
@@ -141,6 +166,25 @@ resource "googleforms_form" "advanced" {
 }
 ```
 
+## Form Management Model (Important)
+
+`googleforms_form` supports two complementary item modes:
+
+- Typed items via `item { ... }` blocks for supported question/item types.
+- Raw JSON items via `content_json` (mutually exclusive with `item` blocks).
+
+When using typed `item` blocks:
+
+- `manage_mode = "all"`: treat the configured item list as authoritative for the whole form.
+- `manage_mode = "partial"`: only manage the configured items (by `item_key`) and leave other items untouched.
+
+When changing items, choose an update strategy:
+
+- `update_strategy = "targeted"`: uses Forms `batchUpdate` to update/move/create/delete items correlated by `item_key` + stored `google_item_id`. Safer for preserving response mappings and external integrations. Refuses question type changes.
+- `update_strategy = "replace_all"`: deletes/recreates items when changes occur. This can break response mappings/integrations; gated by `dangerously_replace_all_items`.
+
+Branching forms (go-to-section behavior) are supported for choice options via `option { ... }`. When you reference sections by `go_to_section_key`, the provider resolves keys to IDs after item IDs exist.
+
 ## Authentication
 
 The provider supports three authentication methods (in priority order):
@@ -149,7 +193,19 @@ The provider supports three authentication methods (in priority order):
 2. **`GOOGLE_CREDENTIALS` environment variable** — Path to service account JSON
 3. **Application Default Credentials** — Automatically detected from environment
 
-Required OAuth scopes: `forms.body`, `drive.file`, `spreadsheets`
+Optional: `impersonate_user` for Google Workspace domain-wide delegation.
+
+Required OAuth scopes: `forms.body`, `drive.file`, `spreadsheets`.
+
+## Limitations / Gotchas
+
+These are the top "surprises" users hit when automating Forms and Drive-backed docs:
+
+- File upload questions: the Forms API does not support creating them via the same typed item workflows. The provider supports `file_upload` primarily for imported/existing items and state.
+- Response destination linking: the Forms REST API does not support programmatically linking a Form to a response Spreadsheet. `googleforms_response_sheet` tracks and can validate the association, but cannot create it.
+- `revision_id` write control: when using `conflict_policy = "fail"`, the `revision_id` is only valid for a limited time (Google currently documents ~24 hours). Plan/apply long after the last read may require a refresh.
+- `googleforms_sheets_conditional_format_rule` uses an index into `conditionalFormats`. Out-of-band edits that insert/remove rules can shift indexes and cause unexpected diffs.
+- `googleforms_sheet_values` is intentionally range-scoped to prevent state explosion. Manage large sheets as many small ranges (or use `googleforms_sheets_batch_update`).
 
 ## Importing Existing Forms
 
@@ -158,6 +214,15 @@ terraform import googleforms_form.existing FORM_ID
 ```
 
 See the [import guide](docs/guides/import-existing-form.md) for details.
+
+## Examples
+
+See `examples/` for complete configurations:
+
+- Forms: `examples/resources/google_forms_form/`
+- Sheets: `examples/resources/google_forms_spreadsheet/`, `examples/resources/google_forms_sheet/`, `examples/resources/google_forms_sheet_values/`
+- Escape hatches: `examples/resources/google_forms_forms_batch_update/`, `examples/resources/google_forms_sheets_batch_update/`
+- Drive: `examples/resources/google_forms_drive_folder/`, `examples/resources/google_forms_drive_permission/`
 
 ## Development
 
@@ -183,14 +248,10 @@ make test-acc
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for full development guide.
 
-## Roadmap
+## Scope / Non-Goals (For Now)
 
-| Version | Status | Features |
-|---------|--------|----------|
-| v0.1.0 | In Progress | MVP: 3 question types, quiz, publish state, JSON mode, import |
-| v0.2.0 | Planned | All question types, Drive folder placement |
-| v0.3.0 | Planned | Permissions management, targeted updates |
-| v1.0.0 | Planned | Stable release, full Phase 2 features |
+- Form responses export/management is not implemented yet (responses are usually treated as data, not infrastructure).
+- Apps Script automation is not included in this provider core (service-account-only CI constraints and operational complexity).
 
 ## License
 
