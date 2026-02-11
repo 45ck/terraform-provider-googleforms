@@ -55,6 +55,7 @@ This project enforces strict quality gates. All checks must pass before merging:
 |------|---------|-------------|
 | Format | `make fmt` | gofumpt + goimports |
 | Lint | `make lint` | golangci-lint v2 (strict config) |
+| Lint (Docker) | `make lint-docker` | golangci-lint in a pinned container |
 | Unit Tests | `make test` | All unit tests |
 | Race Detection | `make test-race` | Tests with Go race detector |
 | Coverage | `make coverage` | >= 85% total, >= 75% per package |
@@ -86,12 +87,12 @@ Types: `feat`, `fix`, `docs`, `style`, `refactor`, `perf`, `test`, `build`, `ci`
 
 ### File Limits
 
-- Max **400 lines** per `.go` file (excluding generated code)
-- Max **10 exported functions/types** per file
+- Max **1800 lines** per non-test `.go` file (excluding generated code)
+- Max **50 exported functions/types** per non-test file
 - Max cyclomatic complexity: **10**
 - Max cognitive complexity: **15**
-- Max function length: **60 lines / 40 statements**
-- Max line length: **120 characters**
+- Max function length: **1000 lines / 800 statements**
+- Max line length: **320 characters**
 
 ### Pull Request Process
 

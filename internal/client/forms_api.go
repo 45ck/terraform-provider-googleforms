@@ -130,10 +130,10 @@ func wrapGoogleAPIError(err error, operation string) error {
 // mapStatusToError creates the appropriate error type for an HTTP status code.
 // The resource parameter identifies the API resource type (e.g. "form", "file").
 func mapStatusToError(code int, message, operation, resource string) error {
-	switch {
-	case code == http.StatusNotFound:
+	switch code {
+	case http.StatusNotFound:
 		return &NotFoundError{Resource: resource, ID: operation}
-	case code == http.StatusTooManyRequests:
+	case http.StatusTooManyRequests:
 		return &RateLimitError{Message: message}
 	default:
 		return &APIError{StatusCode: code, Message: message}

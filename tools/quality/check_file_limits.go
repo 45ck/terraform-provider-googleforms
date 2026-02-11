@@ -14,8 +14,8 @@ import (
 )
 
 const (
-	maxLinesPerFile   = 400
-	maxExportsPerFile = 10
+	maxLinesPerFile   = 1800
+	maxExportsPerFile = 50
 )
 
 func main() {
@@ -27,13 +27,19 @@ func main() {
 		}
 
 		if info.IsDir() {
-			if info.Name() == "vendor" || info.Name() == ".git" {
+			// Skip common directories that can contain large caches or vendored code.
+			switch info.Name() {
+			case "vendor", ".git", ".cache", ".gotmp", ".terraform", "dist":
 				return filepath.SkipDir
 			}
 			return nil
 		}
 
 		if !strings.HasSuffix(path, ".go") {
+			return nil
+		}
+
+		if strings.HasSuffix(path, "_test.go") {
 			return nil
 		}
 

@@ -86,15 +86,25 @@ type spmPackage struct {
 func runSPMGo() ([]byte, error) {
 	spmGoPath, err := exec.LookPath("spm-go")
 	if err != nil {
-		// In some environments the go install bin dir isn't on PATH.
-		gopathBytes, goErr := exec.Command("go", "env", "GOPATH").Output()
-		if goErr != nil {
-			return nil, fmt.Errorf("spm-go not on PATH and failed to discover GOPATH: %w", goErr)
+		// In some environments the go install bin dir isn't on PATH. Try common locations,
+		// and if still missing attempt an on-demand install for developer convenience.
+		candidate, findErr := findSPMGoInGoBinDirs()
+		if findErr != nil {
+			return nil, fmt.Errorf("spm-go not on PATH and failed to discover install dirs: %w", findErr)
 		}
-		gopath := strings.TrimSpace(string(gopathBytes))
-		candidate := filepath.Join(gopath, "bin", "spm-go")
 		if _, statErr := os.Stat(candidate); statErr != nil {
-			return nil, fmt.Errorf("spm-go not found on PATH and not present at %q", candidate)
+			if instErr := installSPMGo(); instErr != nil {
+				return nil, fmt.Errorf("spm-go not found and install failed: %w", instErr)
+			}
+
+			// Re-check after install.
+			candidate, findErr = findSPMGoInGoBinDirs()
+			if findErr != nil {
+				return nil, fmt.Errorf("spm-go installed but failed to discover install dirs: %w", findErr)
+			}
+			if _, statErr2 := os.Stat(candidate); statErr2 != nil {
+				return nil, fmt.Errorf("spm-go not found on PATH and not present at %q", candidate)
+			}
 		}
 		spmGoPath = candidate
 	}
@@ -125,6 +135,39 @@ func runSPMGo() ([]byte, error) {
 	return b[start : end+1], nil
 }
 
+func findSPMGoInGoBinDirs() (string, error) {
+	// First try GOBIN (if set).
+	gobinBytes, err := exec.Command("go", "env", "GOBIN").Output()
+	if err != nil {
+		return "", err
+	}
+	gobin := strings.TrimSpace(string(gobinBytes))
+	if gobin != "" {
+		return filepath.Join(gobin, "spm-go"), nil
+	}
+
+	// Fall back to GOPATH/bin.
+	gopathBytes, err := exec.Command("go", "env", "GOPATH").Output()
+	if err != nil {
+		return "", err
+	}
+	gopath := strings.TrimSpace(string(gopathBytes))
+	return filepath.Join(gopath, "bin", "spm-go"), nil
+}
+
+func installSPMGo() error {
+	cmd := exec.Command("go", "install", "github.com/fdaines/spm-go@latest")
+	var stderr bytes.Buffer
+	cmd.Stderr = &stderr
+	if err := cmd.Run(); err != nil {
+		if stderr.Len() > 0 {
+			return fmt.Errorf("%w: %s", err, strings.TrimSpace(stderr.String()))
+		}
+		return err
+	}
+	return nil
+}
+
 func isInstabilityExempt(path string) bool {
 	// Root module package (main) tends to have Ca=0 and non-zero Ce => I=1.
 	if !strings.Contains(path, "/internal/") {
@@ -133,6 +176,11 @@ func isInstabilityExempt(path string) bool {
 
 	// Provider is an orchestrator and depends on many packages by design.
 	if strings.Contains(path, "/internal/provider") {
+		return true
+	}
+
+	// Acceptance tests are orchestration-heavy and not intended as stable libraries.
+	if strings.Contains(path, "/internal/acc") {
 		return true
 	}
 

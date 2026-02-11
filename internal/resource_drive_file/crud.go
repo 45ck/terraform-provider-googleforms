@@ -56,8 +56,14 @@ func (r *DriveFileResource) Create(ctx context.Context, req resource.CreateReque
 					resp.Diagnostics.AddError("Move Drive File Failed", err.Error())
 					return
 				}
-				parents, _ = r.client.Drive.GetParents(ctx, fileID, supportsAllDrives)
-				plan.ParentIDs, _ = types.ListValueFrom(ctx, types.StringType, parents)
+				parents, perr = r.client.Drive.GetParents(ctx, fileID, supportsAllDrives)
+				if perr == nil {
+					parentIDs, diags := types.ListValueFrom(ctx, types.StringType, parents)
+					resp.Diagnostics.Append(diags...)
+					plan.ParentIDs = parentIDs
+				} else {
+					resp.Diagnostics.AddWarning("Drive Parents Unavailable", perr.Error())
+				}
 			}
 		}
 	}

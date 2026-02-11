@@ -240,7 +240,7 @@ func (r *FormResource) updateReplaceAll(
 	// mode does not fail due to still-existing graded items.
 	var requests []*forms.Request
 
-	if currentForm == nil || currentForm.Info == nil ||
+	if currentForm.Info == nil ||
 		currentForm.Info.Title != plan.Title.ValueString() ||
 		currentForm.Info.Description != plan.Description.ValueString() {
 		requests = append(requests, convert.BuildUpdateInfoRequest(
@@ -412,10 +412,13 @@ func (r *FormResource) updateTargeted(
 		partialNewItemPolicy = plan.PartialNewItemPolicy.ValueString()
 	}
 
-	createdKeyMap := map[string]string{}
-
 	if !plan.ContentJSON.IsNull() && !plan.ContentJSON.IsUnknown() && plan.ContentJSON.ValueString() != "" {
 		diags.AddError("Targeted Updates Not Supported With content_json", "content_json mode cannot be updated in-place. Set update_strategy = \"replace_all\" or switch to item blocks.")
+		return nil, diags
+	}
+
+	if currentForm == nil {
+		diags.AddError("Error Reading Current Form", "Current form payload is nil; targeted update requires a readable form document.")
 		return nil, diags
 	}
 
@@ -454,7 +457,7 @@ func (r *FormResource) updateTargeted(
 	}
 
 	var requests []*forms.Request
-	if currentForm == nil || currentForm.Info == nil ||
+	if currentForm.Info == nil ||
 		currentForm.Info.Title != plan.Title.ValueString() ||
 		currentForm.Info.Description != plan.Description.ValueString() {
 		requests = append(requests, convert.BuildUpdateInfoRequest(
@@ -496,8 +499,7 @@ func (r *FormResource) updateTargeted(
 
 	planKeySeen := make(map[string]bool, len(planItems))
 	planExistingIDs := make([]string, 0, len(planItems))
-	planNewIndices := make([]int, 0)
-	for i, it := range planItems {
+	for _, it := range planItems {
 		key := it.ItemKey.ValueString()
 		planKeySeen[key] = true
 		if gid, ok := stateKeyToID[key]; ok {
@@ -508,7 +510,6 @@ func (r *FormResource) updateTargeted(
 			if manageMode == "partial" {
 				// Previously-managed item was deleted out-of-band; treat as new.
 				delete(stateKeyToID, key)
-				planNewIndices = append(planNewIndices, i)
 				continue
 			}
 
@@ -518,7 +519,6 @@ func (r *FormResource) updateTargeted(
 			)
 			return nil, diags
 		}
-		planNewIndices = append(planNewIndices, i)
 	}
 
 	// Validate that all items in the current form are tracked by state (required for safe moves/deletes).

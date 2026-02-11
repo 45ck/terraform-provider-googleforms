@@ -131,6 +131,7 @@ func resolveCredentialsValue(val string) (string, error) {
 	if strings.HasPrefix(trimmed, "{") {
 		return trimmed, nil
 	}
+	// #nosec G304 -- path is an explicit test credential input.
 	b, err := os.ReadFile(trimmed)
 	if err != nil {
 		return "", fmt.Errorf("read credentials file %q: %w", trimmed, err)

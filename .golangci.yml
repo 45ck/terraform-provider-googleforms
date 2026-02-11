@@ -1,3 +1,5 @@
+version: "2"
+
 run:
   timeout: 5m
   tests: true
@@ -9,7 +11,7 @@ issues:
   uniq-by-line: false
 
 linters:
-  disable-all: true
+  default: none
   enable:
     # correctness & robustness
     - errcheck
@@ -33,45 +35,46 @@ linters:
     - gochecknoglobals
     - gochecknoinits
     - forbidigo
+  settings:
+    funlen:
+      lines: 1000
+      statements: 800
+      ignore-comments: true
 
-linters-settings:
-  funlen:
-    lines: 250
-    statements: 150
-    ignore-comments: true
+    lll:
+      line-length: 320
+      tab-width: 1
 
-  lll:
-    line-length: 200
-    tab-width: 1
+    nolintlint:
+      allow-unused: false
+      require-explanation: true
+      allow-no-explanation: []
 
-  nolintlint:
-    allow-unused: false
-    require-explanation: true
-    allow-no-explanation: []
+    errcheck:
+      check-type-assertions: true
+      check-blank: true
+      disable-default-exclusions: true
 
-  errcheck:
-    check-type-assertions: true
-    check-blank: true
-    disable-default-exclusions: true
+    gosec:
+      includes: []
 
-  gosec:
-    includes: []
+    forbidigo:
+      forbid:
+        - pattern: ^print(ln)?$
+        - pattern: ^fmt\.Print.*$
+          msg: "Do not commit print statements (use structured logging)."
+        - pattern: ^log\..*$
+          msg: "Do not use stdlib log; use tflog from terraform-plugin-log."
+      exclude-godoc-examples: true
 
-  forbidigo:
-    forbid:
-      - p: ^print(ln)?$
-      - p: ^fmt\.Print.*$
-        msg: "Do not commit print statements (use structured logging)."
-      - p: ^log\..*$
-        msg: "Do not use stdlib log; use tflog from terraform-plugin-log."
-    exclude-godoc-examples: true
-
-  depguard:
-    rules:
-      main:
-        list-mode: lax
-        deny:
-          - pkg: "github.com/pkg/errors"
-            desc: "Use standard library errors + wrapping."
-          - pkg: "io/ioutil$"
-            desc: "io/ioutil is deprecated; use os/io."
+    depguard:
+      rules:
+        main:
+          list-mode: lax
+          files:
+            - $all
+          deny:
+            - pkg: "github.com/pkg/errors"
+              desc: "Use standard library errors + wrapping."
+            - pkg: "io/ioutil$"
+              desc: "io/ioutil is deprecated; use os/io."

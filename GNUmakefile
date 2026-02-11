@@ -7,9 +7,10 @@ COVERAGE_THRESHOLD=85
 PACKAGE_COVERAGE_THRESHOLD=75
 MUTATION_THRESHOLD=60
 DOCKER_GO_IMAGE=golang:1.24
+DOCKER_GOLANGCI_LINT_IMAGE=golangci/golangci-lint:v2.4.0
 
 .PHONY: build install clean fmt lint test test-race test-acc coverage \
-        mutation coupling security docs docs-docker test-docker ci ci-fast help
+        mutation coupling security docs docs-docker lint-docker test-docker ci ci-fast help
 
 build: ## Build the provider binary
 	go build $(GOFLAGS) -ldflags="$(LDFLAGS)" -o $(BINARY)
@@ -29,6 +30,9 @@ fmt: ## Format code with gofumpt and goimports
 
 lint: ## Run golangci-lint
 	golangci-lint run
+
+lint-docker: ## Run golangci-lint in Docker
+	docker run --rm -v "$$PWD":/src -w /src $(DOCKER_GOLANGCI_LINT_IMAGE) golangci-lint run --timeout=5m
 
 test: ## Run unit tests
 	go test ./... -short -count=1

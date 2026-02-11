@@ -11,7 +11,7 @@ import (
 	"time"
 )
 
-var sweepFlag = flag.String("sweep", "", "run sweeper: all")
+var sweepFlag = flag.String("sweep", "", "run sweeper: all") //nolint:gochecknoglobals // test flag must be package-global for go test integration
 
 func TestSweeper(t *testing.T) {
 	if *sweepFlag == "" {

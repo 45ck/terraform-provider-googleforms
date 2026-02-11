@@ -163,6 +163,7 @@ func resolveCredentialValue(ctx context.Context, value string) string {
 	}
 
 	// Otherwise treat it as a file path.
+	// #nosec G304 -- path is user-supplied provider configuration and intentionally supported.
 	data, err := os.ReadFile(trimmed)
 	if err != nil {
 		tflog.Warn(ctx, "credentials value is not valid JSON and could not be read as a file; using as-is",
