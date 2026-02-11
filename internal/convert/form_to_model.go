@@ -28,6 +28,9 @@ func FormToModel(form *forms.Form, existingKeyMap map[string]string) (*FormModel
 	if form.Settings != nil && form.Settings.QuizSettings != nil {
 		model.Quiz = form.Settings.QuizSettings.IsQuiz
 	}
+	if form.Settings != nil && form.Settings.EmailCollectionType != "" {
+		model.EmailCollectionType = form.Settings.EmailCollectionType
+	}
 
 	for i, apiItem := range form.Items {
 		itemKey := resolveItemKey(apiItem.ItemId, i, existingKeyMap)
@@ -103,7 +106,61 @@ func FormItemToItemModel(item *forms.Item, itemKey string) (*ItemModel, error) {
 	}
 
 	if item.QuestionItem == nil || item.QuestionItem.Question == nil {
-		return nil, nil // truly unsupported (image, video)
+		// QuestionGroupItem is supported separately below.
+		if item.QuestionGroupItem == nil {
+			return nil, nil // truly unsupported
+		}
+	}
+
+	// QuestionGroupItem: grid questions.
+	if item.QuestionGroupItem != nil && item.QuestionGroupItem.Grid != nil && item.QuestionGroupItem.Grid.Columns != nil {
+		cols := item.QuestionGroupItem.Grid.Columns
+		colVals := make([]string, 0, len(cols.Options))
+		for _, o := range cols.Options {
+			if o != nil {
+				colVals = append(colVals, o.Value)
+			}
+		}
+		rowVals := make([]string, 0, len(item.QuestionGroupItem.Questions))
+		required := false
+		for i, q := range item.QuestionGroupItem.Questions {
+			if q == nil || q.RowQuestion == nil {
+				continue
+			}
+			rowVals = append(rowVals, q.RowQuestion.Title)
+			if i == 0 {
+				required = q.Required
+			}
+		}
+
+		switch cols.Type {
+		case "RADIO":
+			model.MultipleChoiceGrid = &MultipleChoiceGridBlock{
+				QuestionText:     item.Title,
+				Rows:             rowVals,
+				Columns:          colVals,
+				Required:         required,
+				ShuffleQuestions: item.QuestionGroupItem.Grid.ShuffleQuestions,
+				ShuffleColumns:   cols.Shuffle,
+			}
+		case "CHECKBOX":
+			model.CheckboxGrid = &CheckboxGridBlock{
+				QuestionText:     item.Title,
+				Rows:             rowVals,
+				Columns:          colVals,
+				Required:         required,
+				ShuffleQuestions: item.QuestionGroupItem.Grid.ShuffleQuestions,
+				ShuffleColumns:   cols.Shuffle,
+			}
+		default:
+			return nil, nil
+		}
+
+		return model, nil
+	}
+
+	if item.QuestionItem == nil || item.QuestionItem.Question == nil {
+		return nil, nil
 	}
 
 	q := item.QuestionItem.Question
@@ -133,6 +190,16 @@ func FormItemToItemModel(item *forms.Item, itemKey string) (*ItemModel, error) {
 			Required:         q.Required,
 			IconType:         q.RatingQuestion.IconType,
 			RatingScaleLevel: q.RatingQuestion.RatingScaleLevel,
+		}
+	case q.FileUploadQuestion != nil:
+		fu := q.FileUploadQuestion
+		model.FileUpload = &FileUploadBlock{
+			QuestionText: item.Title,
+			Required:     q.Required,
+			FolderID:     fu.FolderId,
+			MaxFileSize:  fu.MaxFileSize,
+			MaxFiles:     fu.MaxFiles,
+			Types:        append([]string{}, fu.Types...),
 		}
 	default:
 		return nil, nil // unsupported question type

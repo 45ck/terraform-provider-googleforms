@@ -69,6 +69,17 @@ func formAttributes() map[string]schema.Attribute {
 			Default:     booldefault.StaticBool(false),
 			Description: "Enable quiz mode with grading.",
 		},
+		"email_collection_type": schema.StringAttribute{
+			Optional:    true,
+			Computed:    true,
+			Description: "Whether the form collects email addresses from respondents. Values: DO_NOT_COLLECT, VERIFIED, RESPONDER_INPUT.",
+			PlanModifiers: []planmodifier.String{
+				stringplanmodifier.UseStateForUnknown(),
+			},
+			Validators: []validator.String{
+				stringvalidator.OneOf("DO_NOT_COLLECT", "VERIFIED", "RESPONDER_INPUT"),
+			},
+		},
 		"update_strategy": schema.StringAttribute{
 			Optional:    true,
 			Computed:    true,
@@ -308,6 +319,80 @@ func itemBlocks() map[string]schema.Block {
 				"grading": gradingBlock,
 			},
 		},
+		"multiple_choice_grid": schema.SingleNestedBlock{
+			Description: "A grid question where each row is a multiple-choice (radio) question sharing the same column options.",
+			Attributes: map[string]schema.Attribute{
+				"question_text": schema.StringAttribute{
+					Required:    true,
+					Description: "The grid title shown to respondents.",
+				},
+				"rows": schema.ListAttribute{
+					Required:    true,
+					ElementType: types.StringType,
+					Description: "Row titles (each row becomes a question). Must have at least one.",
+				},
+				"columns": schema.ListAttribute{
+					Required:    true,
+					ElementType: types.StringType,
+					Description: "Column choices shared by all rows. Must have at least one.",
+				},
+				"required": schema.BoolAttribute{
+					Optional:    true,
+					Computed:    true,
+					Default:     booldefault.StaticBool(false),
+					Description: "Whether each row question is required.",
+				},
+				"shuffle_questions": schema.BoolAttribute{
+					Optional:    true,
+					Computed:    true,
+					Default:     booldefault.StaticBool(false),
+					Description: "If true, row order is randomized for each respondent.",
+				},
+				"shuffle_columns": schema.BoolAttribute{
+					Optional:    true,
+					Computed:    true,
+					Default:     booldefault.StaticBool(false),
+					Description: "If true, column options are randomized for each respondent.",
+				},
+			},
+		},
+		"checkbox_grid": schema.SingleNestedBlock{
+			Description: "A grid question where each row is a checkbox (multi-select) question sharing the same column options.",
+			Attributes: map[string]schema.Attribute{
+				"question_text": schema.StringAttribute{
+					Required:    true,
+					Description: "The grid title shown to respondents.",
+				},
+				"rows": schema.ListAttribute{
+					Required:    true,
+					ElementType: types.StringType,
+					Description: "Row titles (each row becomes a question). Must have at least one.",
+				},
+				"columns": schema.ListAttribute{
+					Required:    true,
+					ElementType: types.StringType,
+					Description: "Column choices shared by all rows. Must have at least one.",
+				},
+				"required": schema.BoolAttribute{
+					Optional:    true,
+					Computed:    true,
+					Default:     booldefault.StaticBool(false),
+					Description: "Whether each row question is required.",
+				},
+				"shuffle_questions": schema.BoolAttribute{
+					Optional:    true,
+					Computed:    true,
+					Default:     booldefault.StaticBool(false),
+					Description: "If true, row order is randomized for each respondent.",
+				},
+				"shuffle_columns": schema.BoolAttribute{
+					Optional:    true,
+					Computed:    true,
+					Default:     booldefault.StaticBool(false),
+					Description: "If true, column options are randomized for each respondent.",
+				},
+			},
+		},
 		"date": schema.SingleNestedBlock{
 			Description: "A date question (no time component).",
 			Attributes: map[string]schema.Attribute{
@@ -442,6 +527,41 @@ func itemBlocks() map[string]schema.Block {
 					Validators: []validator.Int64{
 						int64validator.Between(1, 10),
 					},
+				},
+			},
+		},
+		"file_upload": schema.SingleNestedBlock{
+			Description: "A file upload question. Note: this provider cannot create file upload questions; this block is intended for imported/existing items.",
+			Attributes: map[string]schema.Attribute{
+				"question_text": schema.StringAttribute{
+					Required:    true,
+					Description: "The question text.",
+				},
+				"required": schema.BoolAttribute{
+					Optional:    true,
+					Computed:    true,
+					Default:     booldefault.StaticBool(false),
+					Description: "Whether the question is required.",
+				},
+				"folder_id": schema.StringAttribute{
+					Computed:    true,
+					Description: "Output-only. The Drive folder ID where uploaded files are stored.",
+					PlanModifiers: []planmodifier.String{
+						stringplanmodifier.UseStateForUnknown(),
+					},
+				},
+				"max_file_size": schema.Int64Attribute{
+					Computed:    true,
+					Description: "Output-only. Maximum number of bytes allowed for a single uploaded file.",
+				},
+				"max_files": schema.Int64Attribute{
+					Computed:    true,
+					Description: "Output-only. Maximum number of files allowed per response.",
+				},
+				"types": schema.ListAttribute{
+					Computed:    true,
+					ElementType: types.StringType,
+					Description: "Output-only. Accepted file types.",
 				},
 			},
 		},

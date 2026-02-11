@@ -14,6 +14,7 @@ type FormResourceModel struct {
 	Published            types.Bool   `tfsdk:"published"`
 	AcceptingResponses   types.Bool   `tfsdk:"accepting_responses"`
 	Quiz                 types.Bool   `tfsdk:"quiz"`
+	EmailCollectionType  types.String `tfsdk:"email_collection_type"`
 	UpdateStrategy       types.String `tfsdk:"update_strategy"`
 	DangerousReplaceAll  types.Bool   `tfsdk:"dangerously_replace_all_items"`
 	ManageMode           types.String `tfsdk:"manage_mode"`
@@ -32,22 +33,25 @@ type FormResourceModel struct {
 
 // ItemModel describes a single form item in Terraform state.
 type ItemModel struct {
-	ItemKey        types.String         `tfsdk:"item_key"`
-	MultipleChoice *MultipleChoiceModel `tfsdk:"multiple_choice"`
-	ShortAnswer    *ShortAnswerModel    `tfsdk:"short_answer"`
-	Paragraph      *ParagraphModel      `tfsdk:"paragraph"`
-	Dropdown       *DropdownModel       `tfsdk:"dropdown"`
-	Checkbox       *CheckboxModel       `tfsdk:"checkbox"`
-	Date           *DateModel           `tfsdk:"date"`
-	DateTime       *DateTimeModel       `tfsdk:"date_time"`
-	Scale          *ScaleModel          `tfsdk:"scale"`
-	Time           *TimeModel           `tfsdk:"time"`
-	Rating         *RatingModel         `tfsdk:"rating"`
-	TextItem       *TextItemModel       `tfsdk:"text_item"`
-	Image          *ImageModel          `tfsdk:"image"`
-	Video          *VideoModel          `tfsdk:"video"`
-	SectionHeader  *SectionHeaderModel  `tfsdk:"section_header"`
-	GoogleItemID   types.String         `tfsdk:"google_item_id"`
+	ItemKey            types.String             `tfsdk:"item_key"`
+	MultipleChoice     *MultipleChoiceModel     `tfsdk:"multiple_choice"`
+	ShortAnswer        *ShortAnswerModel        `tfsdk:"short_answer"`
+	Paragraph          *ParagraphModel          `tfsdk:"paragraph"`
+	Dropdown           *DropdownModel           `tfsdk:"dropdown"`
+	Checkbox           *CheckboxModel           `tfsdk:"checkbox"`
+	MultipleChoiceGrid *MultipleChoiceGridModel `tfsdk:"multiple_choice_grid"`
+	CheckboxGrid       *CheckboxGridModel       `tfsdk:"checkbox_grid"`
+	Date               *DateModel               `tfsdk:"date"`
+	DateTime           *DateTimeModel           `tfsdk:"date_time"`
+	Scale              *ScaleModel              `tfsdk:"scale"`
+	Time               *TimeModel               `tfsdk:"time"`
+	Rating             *RatingModel             `tfsdk:"rating"`
+	FileUpload         *FileUploadModel         `tfsdk:"file_upload"`
+	TextItem           *TextItemModel           `tfsdk:"text_item"`
+	Image              *ImageModel              `tfsdk:"image"`
+	Video              *VideoModel              `tfsdk:"video"`
+	SectionHeader      *SectionHeaderModel      `tfsdk:"section_header"`
+	GoogleItemID       types.String             `tfsdk:"google_item_id"`
 }
 
 // MultipleChoiceModel describes a multiple choice question.
@@ -88,6 +92,24 @@ type CheckboxModel struct {
 	Grading      *GradingModel `tfsdk:"grading"`
 }
 
+type MultipleChoiceGridModel struct {
+	QuestionText     types.String `tfsdk:"question_text"`
+	Rows             types.List   `tfsdk:"rows"`
+	Columns          types.List   `tfsdk:"columns"`
+	Required         types.Bool   `tfsdk:"required"`
+	ShuffleQuestions types.Bool   `tfsdk:"shuffle_questions"`
+	ShuffleColumns   types.Bool   `tfsdk:"shuffle_columns"`
+}
+
+type CheckboxGridModel struct {
+	QuestionText     types.String `tfsdk:"question_text"`
+	Rows             types.List   `tfsdk:"rows"`
+	Columns          types.List   `tfsdk:"columns"`
+	Required         types.Bool   `tfsdk:"required"`
+	ShuffleQuestions types.Bool   `tfsdk:"shuffle_questions"`
+	ShuffleColumns   types.Bool   `tfsdk:"shuffle_columns"`
+}
+
 // DateModel describes a date question (no time component).
 type DateModel struct {
 	QuestionText types.String `tfsdk:"question_text"`
@@ -125,6 +147,16 @@ type RatingModel struct {
 	Required         types.Bool   `tfsdk:"required"`
 	IconType         types.String `tfsdk:"icon_type"`
 	RatingScaleLevel types.Int64  `tfsdk:"rating_scale_level"`
+}
+
+type FileUploadModel struct {
+	QuestionText types.String `tfsdk:"question_text"`
+	Required     types.Bool   `tfsdk:"required"`
+
+	FolderID    types.String `tfsdk:"folder_id"`
+	MaxFileSize types.Int64  `tfsdk:"max_file_size"`
+	MaxFiles    types.Int64  `tfsdk:"max_files"`
+	Types       types.List   `tfsdk:"types"`
 }
 
 // TextItemModel describes a text-only item (no question).

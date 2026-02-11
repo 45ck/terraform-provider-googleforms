@@ -165,6 +165,102 @@ func ApplyItemModelToExistingItem(existing *forms.Item, desired ItemModel) (bool
 		existing.VideoItem = nil
 		existing.QuestionGroupItem = nil
 
+	case desired.MultipleChoiceGrid != nil:
+		if existing.QuestionGroupItem == nil || existing.QuestionGroupItem.Grid == nil || existing.QuestionGroupItem.Grid.Columns == nil {
+			return true, nil
+		}
+		if existing.QuestionGroupItem.Grid.Columns.Type != "RADIO" {
+			return true, nil
+		}
+		if len(existing.QuestionGroupItem.Questions) != len(desired.MultipleChoiceGrid.Rows) {
+			return true, nil
+		}
+		if len(existing.QuestionGroupItem.Grid.Columns.Options) != len(desired.MultipleChoiceGrid.Columns) {
+			return true, nil
+		}
+
+		existing.Title = desired.MultipleChoiceGrid.QuestionText
+		existing.QuestionItem = nil
+		existing.TextItem = nil
+		existing.ImageItem = nil
+		existing.VideoItem = nil
+		existing.PageBreakItem = nil
+
+		existing.QuestionGroupItem.Grid.ShuffleQuestions = desired.MultipleChoiceGrid.ShuffleQuestions
+		existing.QuestionGroupItem.Grid.Columns.Shuffle = desired.MultipleChoiceGrid.ShuffleColumns
+		existing.QuestionGroupItem.Grid.Columns.Type = "RADIO"
+		for i, v := range desired.MultipleChoiceGrid.Columns {
+			existing.QuestionGroupItem.Grid.Columns.Options[i] = &forms.Option{Value: v}
+		}
+
+		for i, row := range desired.MultipleChoiceGrid.Rows {
+			q := existing.QuestionGroupItem.Questions[i]
+			if q == nil {
+				q = &forms.Question{}
+				existing.QuestionGroupItem.Questions[i] = q
+			}
+			if q.RowQuestion == nil {
+				q.RowQuestion = &forms.RowQuestion{}
+			}
+			q.RowQuestion.Title = row
+			q.Required = desired.MultipleChoiceGrid.Required
+			q.ChoiceQuestion = nil
+			q.TextQuestion = nil
+			q.DateQuestion = nil
+			q.ScaleQuestion = nil
+			q.TimeQuestion = nil
+			q.RatingQuestion = nil
+			q.FileUploadQuestion = nil
+		}
+
+	case desired.CheckboxGrid != nil:
+		if existing.QuestionGroupItem == nil || existing.QuestionGroupItem.Grid == nil || existing.QuestionGroupItem.Grid.Columns == nil {
+			return true, nil
+		}
+		if existing.QuestionGroupItem.Grid.Columns.Type != "CHECKBOX" {
+			return true, nil
+		}
+		if len(existing.QuestionGroupItem.Questions) != len(desired.CheckboxGrid.Rows) {
+			return true, nil
+		}
+		if len(existing.QuestionGroupItem.Grid.Columns.Options) != len(desired.CheckboxGrid.Columns) {
+			return true, nil
+		}
+
+		existing.Title = desired.CheckboxGrid.QuestionText
+		existing.QuestionItem = nil
+		existing.TextItem = nil
+		existing.ImageItem = nil
+		existing.VideoItem = nil
+		existing.PageBreakItem = nil
+
+		existing.QuestionGroupItem.Grid.ShuffleQuestions = desired.CheckboxGrid.ShuffleQuestions
+		existing.QuestionGroupItem.Grid.Columns.Shuffle = desired.CheckboxGrid.ShuffleColumns
+		existing.QuestionGroupItem.Grid.Columns.Type = "CHECKBOX"
+		for i, v := range desired.CheckboxGrid.Columns {
+			existing.QuestionGroupItem.Grid.Columns.Options[i] = &forms.Option{Value: v}
+		}
+
+		for i, row := range desired.CheckboxGrid.Rows {
+			q := existing.QuestionGroupItem.Questions[i]
+			if q == nil {
+				q = &forms.Question{}
+				existing.QuestionGroupItem.Questions[i] = q
+			}
+			if q.RowQuestion == nil {
+				q.RowQuestion = &forms.RowQuestion{}
+			}
+			q.RowQuestion.Title = row
+			q.Required = desired.CheckboxGrid.Required
+			q.ChoiceQuestion = nil
+			q.TextQuestion = nil
+			q.DateQuestion = nil
+			q.ScaleQuestion = nil
+			q.TimeQuestion = nil
+			q.RatingQuestion = nil
+			q.FileUploadQuestion = nil
+		}
+
 	case desired.ShortAnswer != nil:
 		if existing.QuestionItem == nil || existing.QuestionItem.Question == nil {
 			return true, nil
@@ -356,6 +452,34 @@ func ApplyItemModelToExistingItem(existing *forms.Item, desired ItemModel) (bool
 		q.RatingQuestion.IconType = desired.Rating.IconType
 		q.RatingQuestion.RatingScaleLevel = desired.Rating.RatingScaleLevel
 		q.Grading = nil
+		existing.PageBreakItem = nil
+		existing.TextItem = nil
+		existing.ImageItem = nil
+		existing.VideoItem = nil
+		existing.QuestionGroupItem = nil
+
+	case desired.FileUpload != nil:
+		// File upload questions are only manageable for existing items. We allow
+		// updating title/required but refuse any structural changes.
+		if existing.QuestionItem == nil || existing.QuestionItem.Question == nil {
+			return true, nil
+		}
+		q := existing.QuestionItem.Question
+		if q.FileUploadQuestion == nil {
+			return true, nil
+		}
+
+		q.Required = desired.FileUpload.Required
+		// Do not mutate file upload settings beyond required flag.
+		q.ChoiceQuestion = nil
+		q.TextQuestion = nil
+		q.DateQuestion = nil
+		q.ScaleQuestion = nil
+		q.TimeQuestion = nil
+		q.RatingQuestion = nil
+		q.RowQuestion = nil
+		q.Grading = nil
+
 		existing.PageBreakItem = nil
 		existing.TextItem = nil
 		existing.ImageItem = nil

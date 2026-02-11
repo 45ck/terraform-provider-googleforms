@@ -77,6 +77,11 @@ func (r *FormResource) Create(
 		requests = append(requests, convert.BuildQuizSettingsRequest(true))
 	}
 
+	// Optional: email collection type.
+	if !plan.EmailCollectionType.IsNull() && !plan.EmailCollectionType.IsUnknown() && plan.EmailCollectionType.ValueString() != "" {
+		requests = append(requests, convert.BuildEmailCollectionTypeRequest(plan.EmailCollectionType.ValueString()))
+	}
+
 	// Add items from either content_json or item blocks.
 	if !plan.ContentJSON.IsNull() && !plan.ContentJSON.IsUnknown() && plan.ContentJSON.ValueString() != "" {
 		tflog.Debug(ctx, "using content_json mode for items")

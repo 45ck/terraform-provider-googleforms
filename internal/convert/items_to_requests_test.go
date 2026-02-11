@@ -604,6 +604,96 @@ func TestBuildQuizSettingsRequest_DisableQuiz(t *testing.T) {
 	}
 }
 
+func TestBuildEmailCollectionTypeRequest(t *testing.T) {
+	req := BuildEmailCollectionTypeRequest("RESPONDER_INPUT")
+	if req.UpdateSettings == nil {
+		t.Fatal("expected UpdateSettings to be set")
+	}
+	if req.UpdateSettings.Settings == nil {
+		t.Fatal("expected Settings to be set")
+	}
+	if req.UpdateSettings.Settings.EmailCollectionType != "RESPONDER_INPUT" {
+		t.Fatalf("got %q, want %q", req.UpdateSettings.Settings.EmailCollectionType, "RESPONDER_INPUT")
+	}
+	if req.UpdateSettings.UpdateMask != "emailCollectionType" {
+		t.Fatalf("got %q, want %q", req.UpdateSettings.UpdateMask, "emailCollectionType")
+	}
+}
+
+func TestItemModelToCreateRequest_MultipleChoiceGrid(t *testing.T) {
+	item := ItemModel{
+		Title: "Grid",
+		MultipleChoiceGrid: &MultipleChoiceGridBlock{
+			QuestionText:     "Grid",
+			Rows:             []string{"r1", "r2"},
+			Columns:          []string{"c1", "c2"},
+			Required:         true,
+			ShuffleQuestions: true,
+			ShuffleColumns:   true,
+		},
+	}
+
+	req, err := ItemModelToCreateRequest(item, 0)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if req.CreateItem == nil || req.CreateItem.Item == nil {
+		t.Fatal("expected CreateItem to be set")
+	}
+	if req.CreateItem.Item.QuestionGroupItem == nil || req.CreateItem.Item.QuestionGroupItem.Grid == nil {
+		t.Fatal("expected QuestionGroupItem grid to be set")
+	}
+	if req.CreateItem.Item.QuestionGroupItem.Grid.Columns == nil || req.CreateItem.Item.QuestionGroupItem.Grid.Columns.Type != "RADIO" {
+		t.Fatalf("expected columns type RADIO, got %#v", req.CreateItem.Item.QuestionGroupItem.Grid.Columns)
+	}
+	if !req.CreateItem.Item.QuestionGroupItem.Grid.ShuffleQuestions {
+		t.Fatal("expected ShuffleQuestions=true")
+	}
+}
+
+func TestItemModelToCreateRequest_CheckboxGrid(t *testing.T) {
+	item := ItemModel{
+		Title: "Grid",
+		CheckboxGrid: &CheckboxGridBlock{
+			QuestionText:     "Grid",
+			Rows:             []string{"r1"},
+			Columns:          []string{"c1"},
+			Required:         false,
+			ShuffleQuestions: false,
+			ShuffleColumns:   false,
+		},
+	}
+
+	req, err := ItemModelToCreateRequest(item, 0)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if req.CreateItem == nil || req.CreateItem.Item == nil {
+		t.Fatal("expected CreateItem to be set")
+	}
+	if req.CreateItem.Item.QuestionGroupItem == nil || req.CreateItem.Item.QuestionGroupItem.Grid == nil {
+		t.Fatal("expected QuestionGroupItem grid to be set")
+	}
+	if req.CreateItem.Item.QuestionGroupItem.Grid.Columns == nil || req.CreateItem.Item.QuestionGroupItem.Grid.Columns.Type != "CHECKBOX" {
+		t.Fatalf("expected columns type CHECKBOX, got %#v", req.CreateItem.Item.QuestionGroupItem.Grid.Columns)
+	}
+}
+
+func TestItemModelToCreateRequest_FileUpload_Errors(t *testing.T) {
+	item := ItemModel{
+		Title: "Upload",
+		FileUpload: &FileUploadBlock{
+			QuestionText: "Upload",
+			Required:     true,
+		},
+	}
+
+	_, err := ItemModelToCreateRequest(item, 0)
+	if err == nil {
+		t.Fatal("expected error")
+	}
+}
+
 // ---------------------------------------------------------------------------
 // helpers - ensure types compile (verify forms import used)
 // ---------------------------------------------------------------------------

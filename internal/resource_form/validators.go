@@ -207,7 +207,7 @@ func (v ExactlyOneSubBlockValidator) ValidateResource(
 				"Invalid Item Configuration",
 				fmt.Sprintf(
 					"Item %s must have exactly one question type "+
-						"(multiple_choice, short_answer, paragraph, dropdown, checkbox, date, date_time, scale, time, rating, text_item, image, video, or section_header), but has %d.",
+						"(multiple_choice, short_answer, paragraph, dropdown, checkbox, multiple_choice_grid, checkbox_grid, date, date_time, scale, time, rating, file_upload, text_item, image, video, or section_header), but has %d.",
 					identity, count,
 				),
 			)
@@ -234,6 +234,12 @@ func countSubBlocks(item ItemModel) int {
 	if item.Checkbox != nil {
 		count++
 	}
+	if item.MultipleChoiceGrid != nil {
+		count++
+	}
+	if item.CheckboxGrid != nil {
+		count++
+	}
 	if item.Date != nil {
 		count++
 	}
@@ -247,6 +253,9 @@ func countSubBlocks(item ItemModel) int {
 		count++
 	}
 	if item.Rating != nil {
+		count++
+	}
+	if item.FileUpload != nil {
 		count++
 	}
 	if item.TextItem != nil {

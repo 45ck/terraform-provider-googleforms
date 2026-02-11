@@ -26,6 +26,7 @@ Manages a Google Form. Note: some Forms item types are not supported by the API 
 - `content_json` (String) Declarative JSON array of form items. Mutually exclusive with item blocks. Use jsonencode().
 - `dangerously_replace_all_items` (Boolean) Acknowledge that replace_all item updates can break response mappings and integrations. When false, the provider will emit warnings when replace_all is used.
 - `description` (String) The form description.
+- `email_collection_type` (String) Whether the form collects email addresses from respondents. Values: DO_NOT_COLLECT, VERIFIED, RESPONDER_INPUT.
 - `folder_id` (String) Drive folder ID to place the form into. If set, the provider will move the form file into this folder.
 - `item` (Block List) A form item (question). Each item requires a unique item_key and exactly one question type sub-block. (see [below for nested schema](#nestedblock--item))
 - `manage_mode` (String) Management mode for items. 'all' treats the item list as authoritative for the whole form. 'partial' only manages the configured items (by item_key) and leaves other items untouched; in partial mode, new items are appended by default.
@@ -54,11 +55,14 @@ Required:
 Optional:
 
 - `checkbox` (Block, Optional) A checkbox (multi-select) question. (see [below for nested schema](#nestedblock--item--checkbox))
+- `checkbox_grid` (Block, Optional) A grid question where each row is a checkbox (multi-select) question sharing the same column options. (see [below for nested schema](#nestedblock--item--checkbox_grid))
 - `date` (Block, Optional) A date question (no time component). (see [below for nested schema](#nestedblock--item--date))
 - `date_time` (Block, Optional) A date and time question. (see [below for nested schema](#nestedblock--item--date_time))
 - `dropdown` (Block, Optional) A dropdown (select) question. (see [below for nested schema](#nestedblock--item--dropdown))
+- `file_upload` (Block, Optional) A file upload question. Note: this provider cannot create file upload questions; this block is intended for imported/existing items. (see [below for nested schema](#nestedblock--item--file_upload))
 - `image` (Block, Optional) An image item (non-question). Note: source_uri may not be returned by the API; the provider preserves the configured value in state for drift-free plans. (see [below for nested schema](#nestedblock--item--image))
 - `multiple_choice` (Block, Optional) A multiple choice (radio button) question. (see [below for nested schema](#nestedblock--item--multiple_choice))
+- `multiple_choice_grid` (Block, Optional) A grid question where each row is a multiple-choice (radio) question sharing the same column options. (see [below for nested schema](#nestedblock--item--multiple_choice_grid))
 - `paragraph` (Block, Optional) A paragraph (multi-line text) question. (see [below for nested schema](#nestedblock--item--paragraph))
 - `rating` (Block, Optional) A rating question (stars/hearts/thumbs). (see [below for nested schema](#nestedblock--item--rating))
 - `scale` (Block, Optional) A linear scale question. (see [below for nested schema](#nestedblock--item--scale))
@@ -98,6 +102,22 @@ Optional:
 - `feedback_correct` (String) Feedback shown when the answer is correct.
 - `feedback_incorrect` (String) Feedback shown when the answer is incorrect.
 
+
+
+<a id="nestedblock--item--checkbox_grid"></a>
+### Nested Schema for `item.checkbox_grid`
+
+Required:
+
+- `columns` (List of String) Column choices shared by all rows. Must have at least one.
+- `question_text` (String) The grid title shown to respondents.
+- `rows` (List of String) Row titles (each row becomes a question). Must have at least one.
+
+Optional:
+
+- `required` (Boolean) Whether each row question is required.
+- `shuffle_columns` (Boolean) If true, column options are randomized for each respondent.
+- `shuffle_questions` (Boolean) If true, row order is randomized for each respondent.
 
 
 <a id="nestedblock--item--date"></a>
@@ -154,6 +174,25 @@ Optional:
 
 
 
+<a id="nestedblock--item--file_upload"></a>
+### Nested Schema for `item.file_upload`
+
+Required:
+
+- `question_text` (String) The question text.
+
+Optional:
+
+- `required` (Boolean) Whether the question is required.
+
+Read-Only:
+
+- `folder_id` (String) Output-only. The Drive folder ID where uploaded files are stored.
+- `max_file_size` (Number) Output-only. Maximum number of bytes allowed for a single uploaded file.
+- `max_files` (Number) Output-only. Maximum number of files allowed per response.
+- `types` (List of String) Output-only. Accepted file types.
+
+
 <a id="nestedblock--item--image"></a>
 ### Nested Schema for `item.image`
 
@@ -198,6 +237,22 @@ Optional:
 - `feedback_correct` (String) Feedback shown when the answer is correct.
 - `feedback_incorrect` (String) Feedback shown when the answer is incorrect.
 
+
+
+<a id="nestedblock--item--multiple_choice_grid"></a>
+### Nested Schema for `item.multiple_choice_grid`
+
+Required:
+
+- `columns` (List of String) Column choices shared by all rows. Must have at least one.
+- `question_text` (String) The grid title shown to respondents.
+- `rows` (List of String) Row titles (each row becomes a question). Must have at least one.
+
+Optional:
+
+- `required` (Boolean) Whether each row question is required.
+- `shuffle_columns` (Boolean) If true, column options are randomized for each respondent.
+- `shuffle_questions` (Boolean) If true, row order is randomized for each respondent.
 
 
 <a id="nestedblock--item--paragraph"></a>

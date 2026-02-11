@@ -20,7 +20,7 @@ import (
 type OptionsRequiredForChoiceValidator struct{}
 
 func (v OptionsRequiredForChoiceValidator) Description(_ context.Context) string {
-	return "Validates that multiple_choice questions have at least one option."
+	return "Validates that choice/grid questions have required options/rows."
 }
 
 func (v OptionsRequiredForChoiceValidator) MarkdownDescription(ctx context.Context) string {
@@ -73,6 +73,38 @@ func (v OptionsRequiredForChoiceValidator) ValidateResource(
 				resp.Diagnostics.AddError(
 					"Missing Options",
 					"A checkbox question requires at least one option.",
+				)
+				return
+			}
+		}
+		if item.MultipleChoiceGrid != nil {
+			if item.MultipleChoiceGrid.Rows.IsNull() || item.MultipleChoiceGrid.Rows.IsUnknown() || len(item.MultipleChoiceGrid.Rows.Elements()) == 0 {
+				resp.Diagnostics.AddError(
+					"Missing Rows",
+					"A multiple_choice_grid question requires at least one row.",
+				)
+				return
+			}
+			if item.MultipleChoiceGrid.Columns.IsNull() || item.MultipleChoiceGrid.Columns.IsUnknown() || len(item.MultipleChoiceGrid.Columns.Elements()) == 0 {
+				resp.Diagnostics.AddError(
+					"Missing Columns",
+					"A multiple_choice_grid question requires at least one column.",
+				)
+				return
+			}
+		}
+		if item.CheckboxGrid != nil {
+			if item.CheckboxGrid.Rows.IsNull() || item.CheckboxGrid.Rows.IsUnknown() || len(item.CheckboxGrid.Rows.Elements()) == 0 {
+				resp.Diagnostics.AddError(
+					"Missing Rows",
+					"A checkbox_grid question requires at least one row.",
+				)
+				return
+			}
+			if item.CheckboxGrid.Columns.IsNull() || item.CheckboxGrid.Columns.IsUnknown() || len(item.CheckboxGrid.Columns.Elements()) == 0 {
+				resp.Diagnostics.AddError(
+					"Missing Columns",
+					"A checkbox_grid question requires at least one column.",
 				)
 				return
 			}

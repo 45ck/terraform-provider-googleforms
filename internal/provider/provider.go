@@ -17,6 +17,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 
 	"github.com/45ck/terraform-provider-googleforms/internal/client"
+	datasourcedrivefile "github.com/45ck/terraform-provider-googleforms/internal/datasource_drive_file"
+	datasourceform "github.com/45ck/terraform-provider-googleforms/internal/datasource_form"
 	datasourcesheetvalues "github.com/45ck/terraform-provider-googleforms/internal/datasource_sheet_values"
 	datasourcespreadsheet "github.com/45ck/terraform-provider-googleforms/internal/datasource_spreadsheet"
 	resourcedrivefile "github.com/45ck/terraform-provider-googleforms/internal/resource_drive_file"
@@ -199,6 +201,8 @@ func (p *GoogleFormsProvider) DataSources(
 	_ context.Context,
 ) []func() datasource.DataSource {
 	return []func() datasource.DataSource{
+		datasourceform.NewFormDataSource,
+		datasourcedrivefile.NewDriveFileDataSource,
 		datasourcespreadsheet.NewSpreadsheetDataSource,
 		datasourcesheetvalues.NewSheetValuesDataSource,
 	}

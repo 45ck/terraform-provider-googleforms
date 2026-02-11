@@ -103,6 +103,10 @@ Acceptance tests create real Google Forms and require credentials:
 3. Set `GOOGLE_CREDENTIALS` to the service account JSON path
 4. Run `make test-acc`
 
+Some acceptance tests also require:
+
+- `GOOGLEFORMS_TEST_GRANTEE_EMAIL`: a real user/group email to grant Drive permissions to. If unset, the drive permission test is skipped.
+
 Test forms are prefixed with `tf-test-` for cleanup identification.
 
 ## License

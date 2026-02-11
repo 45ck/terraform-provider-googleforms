@@ -116,6 +116,50 @@ func tfItemsToConvertItems(ctx context.Context, items types.List) ([]convert.Ite
 			result[i].Title = cb.QuestionText
 		}
 
+		if tf.MultipleChoiceGrid != nil {
+			var rows []string
+			diags.Append(tf.MultipleChoiceGrid.Rows.ElementsAs(ctx, &rows, false)...)
+			if diags.HasError() {
+				return nil, diags
+			}
+			var cols []string
+			diags.Append(tf.MultipleChoiceGrid.Columns.ElementsAs(ctx, &cols, false)...)
+			if diags.HasError() {
+				return nil, diags
+			}
+			result[i].MultipleChoiceGrid = &convert.MultipleChoiceGridBlock{
+				QuestionText:     tf.MultipleChoiceGrid.QuestionText.ValueString(),
+				Rows:             rows,
+				Columns:          cols,
+				Required:         tf.MultipleChoiceGrid.Required.ValueBool(),
+				ShuffleQuestions: tf.MultipleChoiceGrid.ShuffleQuestions.ValueBool(),
+				ShuffleColumns:   tf.MultipleChoiceGrid.ShuffleColumns.ValueBool(),
+			}
+			result[i].Title = tf.MultipleChoiceGrid.QuestionText.ValueString()
+		}
+
+		if tf.CheckboxGrid != nil {
+			var rows []string
+			diags.Append(tf.CheckboxGrid.Rows.ElementsAs(ctx, &rows, false)...)
+			if diags.HasError() {
+				return nil, diags
+			}
+			var cols []string
+			diags.Append(tf.CheckboxGrid.Columns.ElementsAs(ctx, &cols, false)...)
+			if diags.HasError() {
+				return nil, diags
+			}
+			result[i].CheckboxGrid = &convert.CheckboxGridBlock{
+				QuestionText:     tf.CheckboxGrid.QuestionText.ValueString(),
+				Rows:             rows,
+				Columns:          cols,
+				Required:         tf.CheckboxGrid.Required.ValueBool(),
+				ShuffleQuestions: tf.CheckboxGrid.ShuffleQuestions.ValueBool(),
+				ShuffleColumns:   tf.CheckboxGrid.ShuffleColumns.ValueBool(),
+			}
+			result[i].Title = tf.CheckboxGrid.QuestionText.ValueString()
+		}
+
 		if tf.Date != nil {
 			result[i].Date = &convert.DateBlock{
 				QuestionText: tf.Date.QuestionText.ValueString(),
@@ -163,6 +207,27 @@ func tfItemsToConvertItems(ctx context.Context, items types.List) ([]convert.Ite
 				RatingScaleLevel: tf.Rating.RatingScaleLevel.ValueInt64(),
 			}
 			result[i].Title = tf.Rating.QuestionText.ValueString()
+		}
+
+		if tf.FileUpload != nil {
+			// Creation of file upload questions is blocked in the convert layer.
+			// This is primarily for representing imported/existing items.
+			var typesList []string
+			if !tf.FileUpload.Types.IsNull() && !tf.FileUpload.Types.IsUnknown() {
+				diags.Append(tf.FileUpload.Types.ElementsAs(ctx, &typesList, false)...)
+				if diags.HasError() {
+					return nil, diags
+				}
+			}
+			result[i].FileUpload = &convert.FileUploadBlock{
+				QuestionText: tf.FileUpload.QuestionText.ValueString(),
+				Required:     tf.FileUpload.Required.ValueBool(),
+				FolderID:     tf.FileUpload.FolderID.ValueString(),
+				MaxFileSize:  tf.FileUpload.MaxFileSize.ValueInt64(),
+				MaxFiles:     tf.FileUpload.MaxFiles.ValueInt64(),
+				Types:        typesList,
+			}
+			result[i].Title = tf.FileUpload.QuestionText.ValueString()
 		}
 
 		if tf.TextItem != nil {
@@ -237,12 +302,18 @@ func convertFormModelToTFState(model *convert.FormModel, plan FormResourceModel)
 	}
 
 	state := FormResourceModel{
-		ID:                   types.StringValue(model.ID),
-		Title:                types.StringValue(model.Title),
-		Description:          types.StringValue(model.Description),
-		Published:            plan.Published,
-		AcceptingResponses:   plan.AcceptingResponses,
-		Quiz:                 types.BoolValue(model.Quiz),
+		ID:                 types.StringValue(model.ID),
+		Title:              types.StringValue(model.Title),
+		Description:        types.StringValue(model.Description),
+		Published:          plan.Published,
+		AcceptingResponses: plan.AcceptingResponses,
+		Quiz:               types.BoolValue(model.Quiz),
+		EmailCollectionType: func() types.String {
+			if model.EmailCollectionType == "" {
+				return types.StringNull()
+			}
+			return types.StringValue(model.EmailCollectionType)
+		}(),
 		UpdateStrategy:       plan.UpdateStrategy,
 		DangerousReplaceAll:  plan.DangerousReplaceAll,
 		ManageMode:           manageMode,
@@ -386,6 +457,37 @@ func convertItemModelToTF(ctx context.Context, item convert.ItemModel, diags *di
 		}
 	}
 
+	if item.MultipleChoiceGrid != nil {
+		g := item.MultipleChoiceGrid
+		rows, d := types.ListValueFrom(ctx, types.StringType, g.Rows)
+		diags.Append(d...)
+		cols, d := types.ListValueFrom(ctx, types.StringType, g.Columns)
+		diags.Append(d...)
+		tf.MultipleChoiceGrid = &MultipleChoiceGridModel{
+			QuestionText:     types.StringValue(g.QuestionText),
+			Rows:             rows,
+			Columns:          cols,
+			Required:         types.BoolValue(g.Required),
+			ShuffleQuestions: types.BoolValue(g.ShuffleQuestions),
+			ShuffleColumns:   types.BoolValue(g.ShuffleColumns),
+		}
+	}
+
+	if item.CheckboxGrid != nil {
+		g := item.CheckboxGrid
+		rows, d := types.ListValueFrom(ctx, types.StringType, g.Rows)
+		diags.Append(d...)
+		cols, d := types.ListValueFrom(ctx, types.StringType, g.Columns)
+		diags.Append(d...)
+		tf.CheckboxGrid = &CheckboxGridModel{
+			QuestionText:     types.StringValue(g.QuestionText),
+			Rows:             rows,
+			Columns:          cols,
+			Required:         types.BoolValue(g.Required),
+			ShuffleQuestions: types.BoolValue(g.ShuffleQuestions),
+			ShuffleColumns:   types.BoolValue(g.ShuffleColumns),
+		}
+	}
 	if item.Date != nil {
 		tf.Date = &DateModel{
 			QuestionText: types.StringValue(item.Date.QuestionText),
@@ -441,6 +543,19 @@ func convertItemModelToTF(ctx context.Context, item convert.ItemModel, diags *di
 		}
 	}
 
+	if item.FileUpload != nil {
+		u := item.FileUpload
+		typesList, d := types.ListValueFrom(ctx, types.StringType, u.Types)
+		diags.Append(d...)
+		tf.FileUpload = &FileUploadModel{
+			QuestionText: types.StringValue(u.QuestionText),
+			Required:     types.BoolValue(u.Required),
+			FolderID:     types.StringValue(u.FolderID),
+			MaxFileSize:  types.Int64Value(u.MaxFileSize),
+			MaxFiles:     types.Int64Value(u.MaxFiles),
+			Types:        typesList,
+		}
+	}
 	if item.TextItem != nil {
 		ti := item.TextItem
 		tf.TextItem = &TextItemModel{
@@ -581,6 +696,26 @@ func itemObjectType() types.ObjectType {
 					"grading":       gradingObjectType(),
 				},
 			},
+			"multiple_choice_grid": types.ObjectType{
+				AttrTypes: map[string]attr.Type{
+					"question_text":     types.StringType,
+					"rows":              types.ListType{ElemType: types.StringType},
+					"columns":           types.ListType{ElemType: types.StringType},
+					"required":          types.BoolType,
+					"shuffle_questions": types.BoolType,
+					"shuffle_columns":   types.BoolType,
+				},
+			},
+			"checkbox_grid": types.ObjectType{
+				AttrTypes: map[string]attr.Type{
+					"question_text":     types.StringType,
+					"rows":              types.ListType{ElemType: types.StringType},
+					"columns":           types.ListType{ElemType: types.StringType},
+					"required":          types.BoolType,
+					"shuffle_questions": types.BoolType,
+					"shuffle_columns":   types.BoolType,
+				},
+			},
 			"date": types.ObjectType{
 				AttrTypes: map[string]attr.Type{
 					"question_text": types.StringType,
@@ -618,6 +753,16 @@ func itemObjectType() types.ObjectType {
 					"required":           types.BoolType,
 					"icon_type":          types.StringType,
 					"rating_scale_level": types.Int64Type,
+				},
+			},
+			"file_upload": types.ObjectType{
+				AttrTypes: map[string]attr.Type{
+					"question_text": types.StringType,
+					"required":      types.BoolType,
+					"folder_id":     types.StringType,
+					"max_file_size": types.Int64Type,
+					"max_files":     types.Int64Type,
+					"types":         types.ListType{ElemType: types.StringType},
 				},
 			},
 			"text_item": types.ObjectType{

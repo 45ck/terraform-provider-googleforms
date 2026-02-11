@@ -7,23 +7,46 @@ package convert
 // It mirrors resourceform.ItemModel but uses plain Go types to avoid
 // circular imports with the Terraform framework types package.
 type ItemModel struct {
-	Title          string
-	ItemKey        string
-	GoogleItemID   string
-	MultipleChoice *MultipleChoiceBlock
-	ShortAnswer    *ShortAnswerBlock
-	Paragraph      *ParagraphBlock
-	Dropdown       *DropdownBlock
-	Checkbox       *CheckboxBlock
-	Date           *DateBlock
-	DateTime       *DateTimeBlock
-	Scale          *ScaleBlock
-	Time           *TimeBlock
-	Rating         *RatingBlock
-	TextItem       *TextItemBlock
-	Image          *ImageBlock
-	Video          *VideoBlock
-	SectionHeader  *SectionHeaderBlock
+	Title              string
+	ItemKey            string
+	GoogleItemID       string
+	MultipleChoice     *MultipleChoiceBlock
+	ShortAnswer        *ShortAnswerBlock
+	Paragraph          *ParagraphBlock
+	Dropdown           *DropdownBlock
+	Checkbox           *CheckboxBlock
+	MultipleChoiceGrid *MultipleChoiceGridBlock
+	CheckboxGrid       *CheckboxGridBlock
+	Date               *DateBlock
+	DateTime           *DateTimeBlock
+	Scale              *ScaleBlock
+	Time               *TimeBlock
+	Rating             *RatingBlock
+	FileUpload         *FileUploadBlock
+	TextItem           *TextItemBlock
+	Image              *ImageBlock
+	Video              *VideoBlock
+	SectionHeader      *SectionHeaderBlock
+}
+
+// MultipleChoiceGridBlock describes a grid question with radio button rows.
+type MultipleChoiceGridBlock struct {
+	QuestionText     string
+	Rows             []string
+	Columns          []string
+	Required         bool
+	ShuffleQuestions bool
+	ShuffleColumns   bool
+}
+
+// CheckboxGridBlock describes a grid question with checkbox rows.
+type CheckboxGridBlock struct {
+	QuestionText     string
+	Rows             []string
+	Columns          []string
+	Required         bool
+	ShuffleQuestions bool
+	ShuffleColumns   bool
 }
 
 // MultipleChoiceBlock describes a multiple-choice (radio) question.
@@ -103,6 +126,19 @@ type RatingBlock struct {
 	RatingScaleLevel int64
 }
 
+// FileUploadBlock describes a file upload question.
+//
+// Note: The Forms API does not reliably support creating file upload questions.
+// This block is primarily for import/management of existing items.
+type FileUploadBlock struct {
+	QuestionText string
+	Required     bool
+	FolderID     string
+	MaxFileSize  int64
+	MaxFiles     int64
+	Types        []string
+}
+
 // TextItemBlock describes a text-only item (no question).
 type TextItemBlock struct {
 	Title       string
@@ -144,12 +180,13 @@ type GradingBlock struct {
 // FormModel is the convert-package representation of the full form state.
 // Uses plain Go types instead of Terraform framework types.
 type FormModel struct {
-	ID            string
-	Title         string
-	Description   string
-	DocumentTitle string
-	ResponderURI  string
-	RevisionID    string
-	Quiz          bool
-	Items         []ItemModel
+	ID                  string
+	Title               string
+	Description         string
+	DocumentTitle       string
+	ResponderURI        string
+	RevisionID          string
+	Quiz                bool
+	EmailCollectionType string
+	Items               []ItemModel
 }

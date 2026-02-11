@@ -313,6 +313,13 @@ func (r *FormResource) updateReplaceAll(
 		requests = append(requests, convert.BuildQuizSettingsRequest(planQuiz))
 	}
 
+	// Email collection type.
+	if !plan.EmailCollectionType.IsNull() && !plan.EmailCollectionType.IsUnknown() && plan.EmailCollectionType.ValueString() != "" {
+		if state.EmailCollectionType.IsNull() || state.EmailCollectionType.IsUnknown() || state.EmailCollectionType.ValueString() != plan.EmailCollectionType.ValueString() {
+			requests = append(requests, convert.BuildEmailCollectionTypeRequest(plan.EmailCollectionType.ValueString()))
+		}
+	}
+
 	requests = append(requests, createItemRequests...)
 
 	if len(requests) == 0 {
@@ -451,6 +458,13 @@ func (r *FormResource) updateTargeted(
 	if planQuiz && !stateQuiz {
 		// Enabling quiz: must set quiz before applying grading.
 		requests = append(requests, convert.BuildQuizSettingsRequest(true))
+	}
+
+	// Email collection type.
+	if !plan.EmailCollectionType.IsNull() && !plan.EmailCollectionType.IsUnknown() && plan.EmailCollectionType.ValueString() != "" {
+		if state.EmailCollectionType.IsNull() || state.EmailCollectionType.IsUnknown() || state.EmailCollectionType.ValueString() != plan.EmailCollectionType.ValueString() {
+			requests = append(requests, convert.BuildEmailCollectionTypeRequest(plan.EmailCollectionType.ValueString()))
+		}
 	}
 
 	// Build state item_key -> google_item_id map for existing items.

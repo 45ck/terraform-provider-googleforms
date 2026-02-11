@@ -28,6 +28,10 @@ func ItemModelToCreateRequest(item ItemModel, index int) (*forms.Request, error)
 		buildDropdown(formItem, item.Dropdown)
 	case item.Checkbox != nil:
 		buildCheckbox(formItem, item.Checkbox)
+	case item.MultipleChoiceGrid != nil:
+		buildMultipleChoiceGrid(formItem, item.MultipleChoiceGrid)
+	case item.CheckboxGrid != nil:
+		buildCheckboxGrid(formItem, item.CheckboxGrid)
 	case item.Date != nil:
 		buildDate(formItem, item.Date)
 	case item.DateTime != nil:
@@ -38,6 +42,8 @@ func ItemModelToCreateRequest(item ItemModel, index int) (*forms.Request, error)
 		buildTime(formItem, item.Time)
 	case item.Rating != nil:
 		buildRating(formItem, item.Rating)
+	case item.FileUpload != nil:
+		return nil, fmt.Errorf("file upload questions cannot be created via the Forms API; import the form or use content_json/forms_batch_update")
 	case item.TextItem != nil:
 		buildTextItem(formItem, item.TextItem)
 	case item.Image != nil:
@@ -56,6 +62,72 @@ func ItemModelToCreateRequest(item ItemModel, index int) (*forms.Request, error)
 			Location: &forms.Location{Index: int64(index)},
 		},
 	}, nil
+}
+
+func buildMultipleChoiceGrid(fi *forms.Item, g *MultipleChoiceGridBlock) {
+	fi.Title = g.QuestionText
+	opts := make([]*forms.Option, len(g.Columns))
+	for i, v := range g.Columns {
+		opts[i] = &forms.Option{Value: v}
+	}
+
+	qs := make([]*forms.Question, len(g.Rows))
+	for i, row := range g.Rows {
+		qs[i] = &forms.Question{
+			Required:    g.Required,
+			RowQuestion: &forms.RowQuestion{Title: row},
+		}
+	}
+
+	fi.QuestionGroupItem = &forms.QuestionGroupItem{
+		Grid: &forms.Grid{
+			Columns: &forms.ChoiceQuestion{
+				Type:    "RADIO",
+				Options: opts,
+				Shuffle: g.ShuffleColumns,
+			},
+			ShuffleQuestions: g.ShuffleQuestions,
+		},
+		Questions: qs,
+	}
+	fi.QuestionItem = nil
+	fi.TextItem = nil
+	fi.PageBreakItem = nil
+	fi.ImageItem = nil
+	fi.VideoItem = nil
+}
+
+func buildCheckboxGrid(fi *forms.Item, g *CheckboxGridBlock) {
+	fi.Title = g.QuestionText
+	opts := make([]*forms.Option, len(g.Columns))
+	for i, v := range g.Columns {
+		opts[i] = &forms.Option{Value: v}
+	}
+
+	qs := make([]*forms.Question, len(g.Rows))
+	for i, row := range g.Rows {
+		qs[i] = &forms.Question{
+			Required:    g.Required,
+			RowQuestion: &forms.RowQuestion{Title: row},
+		}
+	}
+
+	fi.QuestionGroupItem = &forms.QuestionGroupItem{
+		Grid: &forms.Grid{
+			Columns: &forms.ChoiceQuestion{
+				Type:    "CHECKBOX",
+				Options: opts,
+				Shuffle: g.ShuffleColumns,
+			},
+			ShuffleQuestions: g.ShuffleQuestions,
+		},
+		Questions: qs,
+	}
+	fi.QuestionItem = nil
+	fi.TextItem = nil
+	fi.PageBreakItem = nil
+	fi.ImageItem = nil
+	fi.VideoItem = nil
 }
 
 // buildMultipleChoice populates a forms.Item with a ChoiceQuestion (RADIO).
@@ -316,6 +388,18 @@ func BuildQuizSettingsRequest(isQuiz bool) *forms.Request {
 				},
 			},
 			UpdateMask: "quizSettings.isQuiz",
+		},
+	}
+}
+
+// BuildEmailCollectionTypeRequest sets the email collection type on the form.
+func BuildEmailCollectionTypeRequest(emailCollectionType string) *forms.Request {
+	return &forms.Request{
+		UpdateSettings: &forms.UpdateSettingsRequest{
+			Settings: &forms.FormSettings{
+				EmailCollectionType: emailCollectionType,
+			},
+			UpdateMask: "emailCollectionType",
 		},
 	}
 }

@@ -22,8 +22,9 @@ clean: ## Remove build artifacts
 	rm -f coverprofile.txt coverage.html
 
 fmt: ## Format code with gofumpt and goimports
-	gofumpt -w .
-	goimports -w .
+	# Only format module packages (avoid touching local caches like .cache/).
+	gofumpt -w $$(go list -f '{{.Dir}}' ./...)
+	goimports -w $$(go list -f '{{.Dir}}' ./...)
 
 lint: ## Run golangci-lint
 	golangci-lint run

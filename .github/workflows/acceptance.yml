@@ -11,6 +11,7 @@ permissions:
 env:
   TF_ACC: "1"
   GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
+  GOOGLEFORMS_TEST_GRANTEE_EMAIL: ${{ secrets.GOOGLEFORMS_TEST_GRANTEE_EMAIL }}
 
 jobs:
   acceptance:
