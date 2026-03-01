@@ -1,0 +1,71 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 400" fill="none">
+  <defs>
+    <linearGradient id="accent" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#7B42BC"/>
+      <stop offset="100%" stop-color="#4285F4"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Decorative: HCL code block on left -->
+  <g opacity="0.07" transform="translate(50, 90)">
+    <text x="0" y="0" font-family="monospace" font-size="13" fill="#7B42BC">resource "googleforms_form" {</text>
+    <text x="16" y="20" font-family="monospace" font-size="13" fill="#9f67d8">title = "Survey"</text>
+    <text x="16" y="40" font-family="monospace" font-size="13" fill="#9f67d8">published = true</text>
+    <text x="16" y="60" font-family="monospace" font-size="13" fill="#9f67d8">item {</text>
+    <text x="32" y="80" font-family="monospace" font-size="13" fill="#4285F4">multiple_choice {</text>
+    <text x="48" y="100" font-family="monospace" font-size="13" fill="#4285F4">question_text = "..."</text>
+    <text x="32" y="120" font-family="monospace" font-size="13" fill="#4285F4">}</text>
+    <text x="16" y="140" font-family="monospace" font-size="13" fill="#9f67d8">}</text>
+    <text x="0" y="160" font-family="monospace" font-size="13" fill="#7B42BC">}</text>
+  </g>
+
+  <!-- Decorative: form fields on right -->
+  <g opacity="0.07" transform="translate(980, 90)">
+    <!-- Text input field -->
+    <rect x="0" y="0" width="150" height="28" rx="4" stroke="#4285F4" stroke-width="1.5"/>
+    <line x1="10" y1="18" x2="80" y2="18" stroke="#4285F4" stroke-width="1" opacity="0.5"/>
+
+    <!-- Radio buttons -->
+    <circle cx="10" cy="50" r="6" stroke="#4285F4" stroke-width="1.5"/>
+    <circle cx="10" cy="50" r="3" fill="#4285F4"/>
+    <line x1="22" y1="50" x2="80" y2="50" stroke="#4285F4" stroke-width="1" opacity="0.5"/>
+
+    <circle cx="10" cy="72" r="6" stroke="#4285F4" stroke-width="1.5"/>
+    <line x1="22" y1="72" x2="90" y2="72" stroke="#4285F4" stroke-width="1" opacity="0.5"/>
+
+    <circle cx="10" cy="94" r="6" stroke="#4285F4" stroke-width="1.5"/>
+    <line x1="22" y1="94" x2="70" y2="94" stroke="#4285F4" stroke-width="1" opacity="0.5"/>
+
+    <!-- Checkbox -->
+    <rect x="4" y="112" width="12" height="12" rx="2" stroke="#4285F4" stroke-width="1.5"/>
+    <polyline points="7,118 10,121 15,115" stroke="#4285F4" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+    <line x1="22" y1="118" x2="100" y2="118" stroke="#4285F4" stroke-width="1" opacity="0.5"/>
+  </g>
+
+  <!-- Decorative: infrastructure blocks -->
+  <g opacity="0.05">
+    <rect x="400" y="300" width="50" height="35" rx="4" stroke="#7B42BC" stroke-width="1.5"/>
+    <rect x="470" y="300" width="50" height="35" rx="4" stroke="#7B42BC" stroke-width="1.5"/>
+    <rect x="540" y="300" width="50" height="35" rx="4" stroke="#4285F4" stroke-width="1.5"/>
+    <rect x="610" y="300" width="50" height="35" rx="4" stroke="#4285F4" stroke-width="1.5"/>
+    <rect x="680" y="300" width="50" height="35" rx="4" stroke="#7B42BC" stroke-width="1.5"/>
+    <!-- Connecting lines -->
+    <line x1="450" y1="317" x2="470" y2="317" stroke="#8b949e" stroke-width="1"/>
+    <line x1="520" y1="317" x2="540" y2="317" stroke="#8b949e" stroke-width="1"/>
+    <line x1="590" y1="317" x2="610" y2="317" stroke="#8b949e" stroke-width="1"/>
+    <line x1="660" y1="317" x2="680" y2="317" stroke="#8b949e" stroke-width="1"/>
+  </g>
+
+  <!-- Title -->
+  <text x="600" y="160" text-anchor="middle" font-family="'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="48" font-weight="bold" fill="#c4b5fd">
+    Terraform Provider for Google Forms
+  </text>
+
+  <!-- Subtitle -->
+  <text x="600" y="215" text-anchor="middle" font-family="'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="21" fill="#8b949e">
+    Manage Google Forms, Sheets, and Drive as infrastructure with Terraform
+  </text>
+
+  <!-- Accent line -->
+  <rect x="400" y="240" width="400" height="2" rx="1" fill="url(#accent)" opacity="0.4"/>
+</svg>

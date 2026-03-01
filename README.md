@@ -1,5 +1,9 @@
 # Terraform Provider for Google Forms
 
+<p align="center">
+  <img src="banner.svg" alt="Terraform Provider for Google Forms banner" width="100%" />
+</p>
+
 [![Tests](https://github.com/45ck/terraform-provider-googleforms/actions/workflows/test.yml/badge.svg)](https://github.com/45ck/terraform-provider-googleforms/actions/workflows/test.yml)
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
