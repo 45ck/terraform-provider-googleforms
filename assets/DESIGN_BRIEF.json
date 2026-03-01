@@ -1,0 +1,24 @@
+{
+  "repo_name": "terraform-provider-googleforms",
+  "tagline": "Google Forms as infrastructure code",
+  "one_sentence_purpose": "A Terraform provider for managing Google Forms, Sheets, and Drive resources as declarative infrastructure with typed HCL and escape-hatch batch update support.",
+  "target_users": "DevOps and platform engineers who manage Google Workspace forms and spreadsheets programmatically via Terraform",
+  "keywords": ["terraform", "google-forms", "google-sheets", "google-drive", "infrastructure-as-code", "provider"],
+  "visual_metaphors": ["form fields morphing into infrastructure blocks", "a pipeline flowing from HCL code into form checkboxes and spreadsheet cells", "stacked document layers connected by configuration wires"],
+  "avoid": ["no mascots", "no photorealism", "no Google logo (trademark)", "no Terraform logo (trademark)"],
+  "style_adjectives": ["professional", "structured", "warm", "organized", "geometric"],
+  "palette_hint": {
+    "bg_light": "#ffffff",
+    "bg_dark": "#0d1117",
+    "primary": "#7248B9",
+    "accent": "#F4B400",
+    "ink": "#c9d1d9"
+  },
+  "assets_needed": [
+    {"path": "assets/banner.light.png", "type": "readme_banner", "desc": "Wide banner on white background with abstract form fields transforming into infrastructure blocks, project name in purple"},
+    {"path": "assets/banner.dark.png", "type": "readme_banner", "desc": "Wide banner on dark background with abstract form fields transforming into infrastructure blocks, project name in purple"},
+    {"path": "assets/logo.light.png", "type": "square_logo", "desc": "Square logo on white background with abstract layered document icon in purple and gold"},
+    {"path": "assets/logo.dark.png", "type": "square_logo", "desc": "Square logo on dark background with abstract layered document icon in purple and gold"},
+    {"path": "assets/social-preview.png", "type": "github_social_preview", "desc": "GitHub social preview card with tagline, abstract form-to-infra pipeline, purple and gold palette"}
+  ]
+}

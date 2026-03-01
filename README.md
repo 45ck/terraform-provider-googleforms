@@ -1,7 +1,11 @@
 # Terraform Provider for Google Forms
 
 <p align="center">
-  <img src="banner.svg" alt="Terraform Provider for Google Forms banner" width="100%" />
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="assets/banner.dark.png" />
+    <source media="(prefers-color-scheme: light)" srcset="assets/banner.light.png" />
+    <img src="assets/banner.light.png" alt="terraform-provider-googleforms banner" width="100%" />
+  </picture>
 </p>
 
 [![Tests](https://github.com/45ck/terraform-provider-googleforms/actions/workflows/test.yml/badge.svg)](https://github.com/45ck/terraform-provider-googleforms/actions/workflows/test.yml)
